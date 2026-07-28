@@ -1,9 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
-import { SignIn } from "@clerk/nextjs";
+import React, { useState, useEffect } from "react";
+import { SignIn, useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 export default function AuthAndOnboarding() {
+  const { isSignedIn, isLoaded } = useUser();
+  const router = useRouter();
+
+  // Agar user signed in hai toh foran dashboard par bhej dein
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      router.push("/dashboard");
+    }
+  }, [isSignedIn, isLoaded, router]);
+
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 3;
@@ -27,6 +38,11 @@ export default function AuthAndOnboarding() {
     2: "Connect WhatsApp",
     3: "Test System",
   };
+
+  // Jab tak user load ho raha hai, blank ya loading dikha sakte hain
+  if (!isLoaded || isSignedIn) {
+    return null;
+  }
 
   return (
     <main className="relative flex min-h-screen w-full bg-[#fbf8ff] text-[#1a1b22] antialiased overflow-hidden font-sans">
@@ -73,14 +89,9 @@ export default function AuthAndOnboarding() {
         </div>
       </section>
 
-      {/* Right Side: Auth Form (Clerk Integration with hash routing) */}
-      <section className="flex flex-1 flex-col items-center justify-center bg-white px-[24px] py-[64px]">
-        <div className="w-full max-w-md flex flex-col items-center">
-          <div className="mb-[24px] text-center md:hidden">
-            <div className="h-12 w-12 bg-[#3525cd] rounded-lg flex items-center justify-center mx-auto mb-[16px]">
-              <span className="material-symbols-outlined text-white text-3xl">hub</span>
-            </div>
-          </div>
+      {/* Right Side: Auth Form Centered */}
+      <section className="flex flex-1 items-center justify-center bg-white px-[24px] py-[64px]">
+        <div className="w-full max-w-md flex items-center justify-center">
           <SignIn routing="hash" />
         </div>
       </section>
@@ -178,7 +189,7 @@ export default function AuthAndOnboarding() {
               {/* Footer Navigation */}
               <div className="mt-[48px] flex items-center justify-between border-t border-[#c7c4d8] pt-[24px]">
                 <button 
-                  onClick={prevError => prevStep()}
+                  onClick={prevStep}
                   className={`flex items-center gap-[4px] px-[24px] py-[16px] text-[#464555] font-bold hover:text-[#3525cd] transition-colors ${currentStep === 1 ? 'invisible' : ''}`}
                 >
                   <span className="material-symbols-outlined">arrow_back</span>
