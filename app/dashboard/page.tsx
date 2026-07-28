@@ -1,13 +1,15 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { SignOutButton } from "@clerk/nextjs";
 
 export default function CommandCenterPage() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#fbf8ff] text-[#1a1b22] font-sans">
+    <div className={`flex min-h-screen w-full bg-[#fbf8ff] text-[#1a1b22] font-sans ${sidebarOpen ? 'overflow-hidden' : ''}`}>
       {/* SideNavBar */}
-      <aside className="w-64 h-full bg-[#2f3038] flex flex-col py-4 px-4 border-r border-[#777587] z-50 text-white shrink-0">
+      <aside className="hidden md:flex w-64 h-full bg-[#2f3038] flex-col py-4 px-4 border-r border-[#777587] z-50 text-white shrink-0">
         <div className="mb-6 px-2">
           <h1 className="text-[18px] font-bold text-[#e2dfff]">Call-Pulse</h1>
           <p className="text-[11px] text-[#e3e1ec] opacity-70">Intelligent Link</p>
@@ -52,11 +54,63 @@ export default function CommandCenterPage() {
         </div>
       </aside>
 
+      {/* Mobile Sidebar (drawer) */}
+      <div className={`fixed inset-y-0 left-0 w-64 bg-[#2f3038] flex flex-col py-4 px-4 border-r border-[#777587] z-50 text-white transform transition-transform md:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="mb-6 px-2">
+          <h1 className="text-[18px] font-bold text-[#e2dfff]">Call-Pulse</h1>
+          <p className="text-[11px] text-[#e3e1ec] opacity-70">Intelligent Link</p>
+        </div>
+        <nav className="flex-grow space-y-1">
+          <a onClick={() => setSidebarOpen(false)} href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#e2dfff] font-bold border-r-2 border-[#3525cd] bg-[#3525cd]/10 transition-colors">
+            <span className="material-symbols-outlined text-[20px] not-italic leading-none">dashboard</span>
+            <span className="text-[13px]">Command Center</span>
+          </a>
+          <a onClick={() => setSidebarOpen(false)} href="/activity-logs" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+            <span className="material-symbols-outlined text-[20px] not-italic leading-none">list_alt</span>
+            <span className="text-[13px]">Activity Logs</span>
+          </a>
+          <a onClick={() => setSidebarOpen(false)} href="/integrations" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+            <span className="material-symbols-outlined text-[20px] not-italic leading-none">hub</span>
+            <span className="text-[13px]">Integrations Vault</span>
+          </a>
+          <a onClick={() => setSidebarOpen(false)} href="/automation" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+            <span className="material-symbols-outlined text-[20px] not-italic leading-none">smart_toy</span>
+            <span className="text-[13px]">Automation</span>
+          </a>
+          <a onClick={() => setSidebarOpen(false)} href="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+            <span className="material-symbols-outlined text-[20px] not-italic leading-none">settings</span>
+            <span className="text-[13px]">Settings</span>
+          </a>
+        </nav>
+        <div className="mt-auto pt-4 border-t border-white/10 space-y-1">
+          <button onClick={() => setSidebarOpen(false)} className="w-full bg-[#4f46e5] text-white py-2.5 px-3 rounded-xl font-bold mb-3 hover:opacity-90 transition-all flex items-center justify-center gap-2 text-[13px]">
+            <span className="material-symbols-outlined text-[18px] not-italic leading-none">add</span>
+            New Automation
+          </button>
+          <a onClick={() => setSidebarOpen(false)} href="#" className="flex items-center gap-3 px-3 py-1.5 rounded-lg text-gray-300 hover:bg-white/5 transition-colors text-[13px]">
+            <span className="material-symbols-outlined text-[18px] not-italic leading-none">help</span>
+            <span>Support</span>
+          </a>
+          <SignOutButton redirectUrl="/">
+            <button onClick={() => setSidebarOpen(false)} className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-gray-300 hover:bg-white/5 transition-colors text-[13px] text-left">
+              <span className="material-symbols-outlined text-[18px] not-italic leading-none">logout</span>
+              <span>Sign Out</span>
+            </button>
+          </SignOutButton>
+        </div>
+      </div>
+
+      {/* Overlay when mobile sidebar is open */}
+      {sidebarOpen && <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setSidebarOpen(false)}></div>}
+
       {/* Main Content Area */}
       <div className="flex-1 h-full flex flex-col overflow-y-auto">
         {/* TopAppBar */}
         <header className="sticky top-0 z-40 bg-[#fbf8ff]/90 backdrop-blur-md border-b border-[#c7c4d8] shadow-sm flex justify-between items-center px-6 py-3 shrink-0">
           <div className="flex items-center gap-6 flex-1">
+            <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 rounded-md bg-white/80 hover:bg-white/90 mr-2">
+              <span className="material-symbols-outlined text-[20px] text-[#464555] not-italic leading-none">menu</span>
+            </button>
             <div className="relative w-full max-w-sm flex items-center">
               <span className="material-symbols-outlined absolute left-3.5 text-[#464555] text-[18px] not-italic leading-none">search</span>
               <input type="text" placeholder="Search operational metrics..." className="w-full pl-10 pr-4 py-1.5 bg-[#f4f2fd] border border-[#c7c4d8] rounded-full focus:ring-2 focus:ring-[#3525cd]/20 focus:border-[#3525cd] outline-none text-[13px]" />
