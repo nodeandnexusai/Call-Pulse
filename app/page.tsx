@@ -1,16 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
+import { SignIn } from "@clerk/nextjs";
 
 export default function AuthAndOnboarding() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 3;
-
-  const handleSignIn = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsOnboardingOpen(true);
-  };
 
   const nextStep = () => {
     if (currentStep < totalSteps) {
@@ -77,75 +73,15 @@ export default function AuthAndOnboarding() {
         </div>
       </section>
 
-      {/* Right Side: Auth Form */}
+      {/* Right Side: Auth Form (Clerk Integration with hash routing) */}
       <section className="flex flex-1 flex-col items-center justify-center bg-white px-[24px] py-[64px]">
-        <div className="w-full max-w-md">
-          <div className="mb-[48px] text-center md:text-left">
-            <div className="md:hidden flex justify-center mb-[24px]">
-              <div className="h-12 w-12 bg-[#3525cd] rounded-lg flex items-center justify-center">
-                <span className="material-symbols-outlined text-white text-3xl">hub</span>
-              </div>
+        <div className="w-full max-w-md flex flex-col items-center">
+          <div className="mb-[24px] text-center md:hidden">
+            <div className="h-12 w-12 bg-[#3525cd] rounded-lg flex items-center justify-center mx-auto mb-[16px]">
+              <span className="material-symbols-outlined text-white text-3xl">hub</span>
             </div>
-            <h2 className="text-[28px] font-bold text-[#1a1b22] mb-[8px]">Welcome back</h2>
-            <p className="text-[14px] text-[#464555]">Sign in to your intelligent command center.</p>
           </div>
-
-          <div className="space-y-[24px]">
-            <button className="flex w-full items-center justify-center gap-[8px] rounded-xl border border-[#c7c4d8] bg-white py-[16px] text-[#1a1b22] font-semibold hover:bg-[#eeedf7] transition-all active:scale-[0.98]">
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"></path>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
-              </svg>
-              Continue with Google
-            </button>
-
-            <div className="relative flex items-center py-[8px]">
-              <div className="flex-grow border-t border-[#c7c4d8]"></div>
-              <span className="mx-[16px] flex-shrink text-[12px] text-[#464555] uppercase font-medium">or continue with email</span>
-              <div className="flex-grow border-t border-[#c7c4d8]"></div>
-            </div>
-
-            <form className="space-y-[24px]" onSubmit={handleSignIn}>
-              <div className="relative">
-                <input 
-                  type="email" 
-                  id="email" 
-                  required 
-                  placeholder="name@company.com"
-                  defaultValue="saadmalikk1998@gmail.com"
-                  className="w-full rounded-xl border border-[#c7c4d8] bg-white px-[16px] py-4 text-[#1a1b22] focus:border-[#3525cd] focus:ring-2 focus:ring-[#3525cd]/20 outline-none transition-all" 
-                />
-              </div>
-              <div className="relative">
-                <input 
-                  type="password" 
-                  id="password" 
-                  required 
-                  placeholder="••••••••"
-                  defaultValue="••••••••••••"
-                  className="w-full rounded-xl border border-[#c7c4d8] bg-white px-[16px] py-4 text-[#1a1b22] focus:border-[#3525cd] focus:ring-2 focus:ring-[#3525cd]/20 outline-none transition-all" 
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-[8px] cursor-pointer group">
-                  <input type="checkbox" className="h-4 w-4 rounded border-[#c7c4d8] text-[#3525cd] focus:ring-[#3525cd]" />
-                  <span className="text-[13px] text-[#464555] group-hover:text-[#1a1b22] transition-colors">Remember me</span>
-                </label>
-                <a href="#" className="text-[13px] font-semibold text-[#3525cd] hover:underline">Forgot password?</a>
-              </div>
-
-              <button type="submit" className="w-full rounded-xl bg-[#3525cd] py-[16px] text-white font-bold text-[16px] shadow-sm hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all">
-                Sign In
-              </button>
-            </form>
-
-            <p className="text-center text-[13px] text-[#464555]">
-              Don't have an account? <a href="#" className="font-bold text-[#3525cd] hover:underline">Create an account</a>
-            </p>
-          </div>
+          <SignIn routing="hash" />
         </div>
       </section>
 
@@ -242,7 +178,7 @@ export default function AuthAndOnboarding() {
               {/* Footer Navigation */}
               <div className="mt-[48px] flex items-center justify-between border-t border-[#c7c4d8] pt-[24px]">
                 <button 
-                  onClick={prevStep}
+                  onClick={prevError => prevStep()}
                   className={`flex items-center gap-[4px] px-[24px] py-[16px] text-[#464555] font-bold hover:text-[#3525cd] transition-colors ${currentStep === 1 ? 'invisible' : ''}`}
                 >
                   <span className="material-symbols-outlined">arrow_back</span>
