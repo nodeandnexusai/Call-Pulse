@@ -8,5 +8,5 @@ export default defineConfig({
   },
   datasource: {
     url: "postgresql://postgres.aiikhrimtojujrknhfeu:saadmalik%2F383@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true",
-    },
+  },
 });

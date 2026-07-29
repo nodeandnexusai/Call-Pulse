@@ -1,46 +1,281 @@
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
 }
 
 generator client {
   provider = "prisma-client-js"
 }
 
+// ─── Tenant Root ───────────────────────────────────────────────────────────────
+model Business {
+  id          String   @id @default(uuid())
+  clerkUserId String   @unique @map("clerk_user_id")
+  name        String   @default("My Business")
+  timezone    String   @default("Asia/Dubai")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  users              User[]
+  lines              BusinessLine[]
+  credentials        IntegrationCredential[]
+  calls              Call[]
+  leads              Lead[]
+  templates          MessageTemplate[]
+  messages           Message[]
+  automationRules    AutomationRule[]
+  dailyMetrics       DailyMetric[]
+  credentialAccessLog CredentialAccessLog[]
+
+  @@map("businesses")
+}
+
+// ─── Dashboard Users ───────────────────────────────────────────────────────────
 model User {
-  id            String        @id @default(cuid())
-  email         String        @unique
-  passwordHash  String?
-  name          String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  clientConfig  ClientConfig?
+  id          String   @id @default(uuid())
+  clerkUserId String   @unique @map("clerk_user_id")
+  businessId  String   @map("business_id")
+  role        UserRole @default(agent)
+  fullName    String?  @map("full_name")
+  email       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  assignedLeads  Lead[]
+
+  @@map("users")
 }
 
-model ClientConfig {
-  id                    String    @id @default(cuid())
-  userId                String    @unique
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  businessName          String
-  businessPhone         String    @unique
-  twilioAccountSid      String
-  twilioAuthToken       String
-  twilioPhoneNumber     String
-  whatsappPhoneNumberId String
-  whatsappAccessToken   String
-  isAutomationActive    Boolean   @default(false)
-  messageTemplate       String    @default("Hi from {{business_name}}! We missed your call. How can we help you today?")
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  logs                  CallLog[]
+enum UserRole {
+  superuser
+  admin
+  agent
 }
 
-model CallLog {
-  id             String       @id @default(cuid())
-  clientConfigId String
-  clientConfig   ClientConfig @relation(fields: [clientConfigId], references: [id], onDelete: Cascade)
-  callerPhone    String
-  callStatus     String
-  messageStatus  String
-  errorMessage   String?
-  timestamp      DateTime     @default(now())
+// ─── Connected Phone Lines ─────────────────────────────────────────────────────
+model BusinessLine {
+  id            String   @id @default(uuid())
+  businessId    String   @map("business_id")
+  label         String
+  phoneNumber   String   @map("phone_number")
+  provider      LineProvider
+  isActive      Boolean  @default(true) @map("is_active")
+  businessHours Json?    @map("business_hours")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  business        Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  calls           Call[]
+  leads           Lead[]
+  automationRules AutomationRule[]
+
+  @@map("business_lines")
+}
+
+enum LineProvider {
+  twilio
+  whatsapp
+}
+
+// ─── Encrypted Integration Credentials ────────────────────────────────────────
+model IntegrationCredential {
+  id                   String            @id @default(uuid())
+  businessId           String            @map("business_id")
+  provider             CredentialProvider
+  accountSidEncrypted  String?           @map("account_sid_encrypted")
+  authTokenEncrypted   String?           @map("auth_token_encrypted")
+  phoneNumberId        String?           @map("phone_number_id")
+  wabaId               String?           @map("waba_id")
+  accessTokenEncrypted String?           @map("access_token_encrypted")
+  phoneNumber          String?           @map("phone_number")
+  status               CredentialStatus  @default(pending)
+  lastVerifiedAt       DateTime?         @map("last_verified_at")
+  createdAt            DateTime          @default(now()) @map("created_at")
+
+  business            Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  credentialAccessLog CredentialAccessLog[]
+
+  @@unique([businessId, provider])
+  @@map("integration_credentials")
+}
+
+enum CredentialProvider {
+  twilio
+  meta_whatsapp
+}
+
+enum CredentialStatus {
+  active
+  pending
+  failed
+}
+
+// ─── Calls ─────────────────────────────────────────────────────────────────────
+model Call {
+  id             String     @id @default(uuid())
+  businessId     String     @map("business_id")
+  lineId         String?    @map("line_id")
+  callerNumber   String     @map("caller_number")
+  callStatus     CallStatus @map("call_status")
+  twilioCallSid  String?    @map("twilio_call_sid")
+  receivedAt     DateTime   @default(now()) @map("received_at")
+  createdAt      DateTime   @default(now()) @map("created_at")
+
+  business Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  line     BusinessLine? @relation(fields: [lineId], references: [id])
+  lead     Lead?
+
+  @@map("calls")
+}
+
+enum CallStatus {
+  missed
+  answered
+  voicemail
+}
+
+// ─── Leads ─────────────────────────────────────────────────────────────────────
+model Lead {
+  id              String     @id @default(uuid())
+  businessId      String     @map("business_id")
+  callId          String?    @unique @map("call_id")
+  phoneNumber     String     @map("phone_number")
+  status          LeadStatus @default(new)
+  score           LeadScore?
+  assignedAgentId String?    @map("assigned_agent_id")
+  sourceLineId    String?    @map("source_line_id")
+  automationPaused Boolean   @default(false) @map("automation_paused")
+  sequenceStep    Int        @default(1) @map("sequence_step")
+  nextFollowUpAt  DateTime?  @map("next_follow_up_at")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  call          Call?         @relation(fields: [callId], references: [id])
+  assignedAgent User?         @relation(fields: [assignedAgentId], references: [id])
+  sourceLine    BusinessLine? @relation(fields: [sourceLineId], references: [id])
+  messages      Message[]
+
+  @@map("leads")
+}
+
+enum LeadStatus {
+  new
+  messaged
+  replied
+  qualified
+  cold
+  lost
+}
+
+enum LeadScore {
+  hot
+  warm
+  cold
+}
+
+// ─── Message Templates ─────────────────────────────────────────────────────────
+model MessageTemplate {
+  id            String          @id @default(uuid())
+  businessId    String          @map("business_id")
+  name          String
+  channel       MessageChannel
+  body          String
+  sequenceStep  Int             @default(1) @map("sequence_step")
+  delayMinutes  Int             @default(0) @map("delay_minutes")
+  isActive      Boolean         @default(true) @map("is_active")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  business              Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  automationRules       AutomationRule[] @relation("PrimaryTemplate")
+  afterHoursRules       AutomationRule[] @relation("AfterHoursTemplate")
+
+  @@map("message_templates")
+}
+
+enum MessageChannel {
+  sms
+  whatsapp
+}
+
+// ─── Messages ──────────────────────────────────────────────────────────────────
+model Message {
+  id                String         @id @default(uuid())
+  businessId        String         @map("business_id")
+  leadId            String         @map("lead_id")
+  direction         MessageDirection
+  channel           MessageChannel
+  body              String
+  status            MessageStatus  @default(queued)
+  providerMessageId String?        @map("provider_message_id")
+  sentAt            DateTime?      @map("sent_at")
+  createdAt         DateTime       @default(now()) @map("created_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+enum MessageDirection {
+  outbound
+  inbound
+}
+
+enum MessageStatus {
+  queued
+  sent
+  delivered
+  failed
+  replied
+}
+
+// ─── Automation Rules ──────────────────────────────────────────────────────────
+model AutomationRule {
+  id                   String   @id @default(uuid())
+  businessId           String   @map("business_id")
+  lineId               String?  @map("line_id")
+  isActive             Boolean  @default(true) @map("is_active")
+  triggerType          String   @default("missed_call") @map("trigger_type")
+  templateId           String   @map("template_id")
+  respectBusinessHours Boolean  @default(true) @map("respect_business_hours")
+  afterHoursTemplateId String?  @map("after_hours_template_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  business           Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  line               BusinessLine?    @relation(fields: [lineId], references: [id])
+  template           MessageTemplate  @relation("PrimaryTemplate", fields: [templateId], references: [id])
+  afterHoursTemplate MessageTemplate? @relation("AfterHoursTemplate", fields: [afterHoursTemplateId], references: [id])
+
+  @@map("automation_rules")
+}
+
+// ─── Daily Metrics Rollup ──────────────────────────────────────────────────────
+model DailyMetric {
+  id                    String   @id @default(uuid())
+  businessId            String   @map("business_id")
+  date                  DateTime @db.Date
+  missedCalls           Int      @default(0) @map("missed_calls")
+  autoRepliesSent       Int      @default(0) @map("auto_replies_sent")
+  repliesReceived       Int      @default(0) @map("replies_received")
+  leadsQualified        Int      @default(0) @map("leads_qualified")
+  avgResponseTimeSeconds Int?    @map("avg_response_time_seconds")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, date])
+  @@map("daily_metrics")
+}
+
+// ─── Credential Access Audit Log ───────────────────────────────────────────────
+model CredentialAccessLog {
+  id           String   @id @default(uuid())
+  businessId   String   @map("business_id")
+  credentialId String   @map("credential_id")
+  clerkUserId  String   @map("clerk_user_id")
+  action       String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  business   Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  credential IntegrationCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+
+  @@map("credential_access_logs")
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function SettingsPage() {
   const [missedCallAlerts, setMissedCallAlerts] = useState(true);
@@ -8,6 +8,37 @@ export default function SettingsPage() {
   const [systemUpdates, setSystemUpdates] = useState(false);
   const [fullName, setFullName] = useState("Alex Rivera");
   const [email, setEmail] = useState("alex.rivera@nexuscore.ai");
+  const [businessName, setBusinessName] = useState("");
+  const [timezone, setTimezone] = useState("Asia/Dubai");
+  const [savingBusiness, setSavingBusiness] = useState(false);
+  const [savedBusiness, setSavedBusiness] = useState(false);
+
+  useEffect(() => {
+    async function loadBusiness() {
+      const res = await fetch("/api/settings/business");
+      if (res.ok) {
+        const data = await res.json();
+        setBusinessName(data.name ?? "");
+        setTimezone(data.timezone ?? "Asia/Dubai");
+      }
+    }
+    loadBusiness();
+  }, []);
+
+  const handleSaveBusiness = async () => {
+    setSavingBusiness(true);
+    setSavedBusiness(false);
+    try {
+      const res = await fetch("/api/settings/business", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: businessName, timezone }),
+      });
+      if (res.ok) setSavedBusiness(true);
+    } finally {
+      setSavingBusiness(false);
+    }
+  };
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#fbf8ff] text-[#1a1b22] font-sans">
@@ -22,9 +53,17 @@ export default function SettingsPage() {
             <span className="material-symbols-outlined text-[20px] not-italic leading-none">dashboard</span>
             <span className="text-[13px]">Command Center</span>
           </a>
-          <a href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+          <a href="/activity-logs" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
             <span className="material-symbols-outlined text-[20px] not-italic leading-none">list_alt</span>
             <span className="text-[13px]">Activity Logs</span>
+          </a>
+          <a href="/conversations" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+            <span className="material-symbols-outlined text-[20px] not-italic leading-none">forum</span>
+            <span className="text-[13px]">Conversations</span>
+          </a>
+          <a href="/reports" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+            <span className="material-symbols-outlined text-[20px] not-italic leading-none">bar_chart</span>
+            <span className="text-[13px]">Reports</span>
           </a>
           <a href="/integrations" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
             <span className="material-symbols-outlined text-[20px] not-italic leading-none">hub</span>
@@ -96,6 +135,40 @@ export default function SettingsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Profile & Team Settings (Left 2 Columns) */}
             <div className="lg:col-span-2 space-y-6">
+
+              {/* Business Profile */}
+              <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/30">
+                  <h2 className="text-[15px] font-semibold text-[#1a1b22]">Business Profile</h2>
+                  {savedBusiness && <span className="text-[11px] bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold border border-emerald-100">Saved ✓</span>}
+                </div>
+                <div className="p-6 space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-[12px] text-[#464555] block">Business Name</label>
+                      <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2.5 focus:ring-1 focus:ring-[#3525cd] outline-none text-[13px]" placeholder="Your Business Name" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-[12px] text-[#464555] block">Timezone</label>
+                      <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2.5 focus:ring-1 focus:ring-[#3525cd] outline-none text-[13px]">
+                        <option value="Asia/Dubai">Asia/Dubai (GST +4)</option>
+                        <option value="America/New_York">America/New_York (EST)</option>
+                        <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
+                        <option value="Europe/London">Europe/London (GMT)</option>
+                        <option value="Asia/Karachi">Asia/Karachi (PKT +5)</option>
+                        <option value="Asia/Kolkata">Asia/Kolkata (IST +5:30)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="pt-2 flex justify-end">
+                    <button onClick={handleSaveBusiness} disabled={savingBusiness} className="px-5 py-2 bg-[#3525cd] text-white rounded-lg font-bold text-[13px] hover:opacity-90 transition-all shadow-sm disabled:opacity-60">
+                      {savingBusiness ? "Saving..." : "Save Business Profile"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Personal Profile */}
               <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/30">
                   <h2 className="text-[15px] font-semibold text-[#1a1b22]">Profile Settings</h2>

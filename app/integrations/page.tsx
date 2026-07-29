@@ -1,13 +1,128 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-export default function IntegrationsVaultPage() {
-  const [showTwilioToken, setShowTwilioToken] = useState(false);
+type Credential = {
+  id: string;
+  provider: "twilio" | "meta_whatsapp";
+  status: string;
+  lastVerifiedAt: string | null;
+  phoneNumberId: string | null;
+  wabaId: string | null;
+  phoneNumber: string | null;
+  accountSidMasked: string | null;
+  authTokenMasked: string | null;
+  accessTokenMasked: string | null;
+};
+
+export default function IntegrationsPage() {
+  // WhatsApp fields
+  const [phoneNumberId, setPhoneNumberId] = useState("");
+  const [wabaId, setWabaId] = useState("");
+  const [accessToken, setAccessToken] = useState("");
+
+  // Twilio fields
+  const [accountSid, setAccountSid] = useState("");
+  const [authToken, setAuthToken] = useState("");
+  const [twilioPhone, setTwilioPhone] = useState("");
+
+  const [savingWA, setSavingWA] = useState(false);
+  const [savingTwilio, setSavingTwilio] = useState(false);
+  const [savedWA, setSavedWA] = useState(false);
+  const [savedTwilio, setSavedTwilio] = useState(false);
+  const [testingId, setTestingId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<Record<string, { ok: boolean; label: string }>>({});
+  const [existingCreds, setExistingCreds] = useState<Credential[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchCreds() {
+      try {
+        const res = await fetch("/api/integrations");
+        if (res.ok) {
+          const data = await res.json();
+          const creds: Credential[] = data.integrations ?? [];
+          setExistingCreds(creds);
+
+          const wa = creds.find((c) => c.provider === "meta_whatsapp");
+          if (wa) {
+            setPhoneNumberId(wa.phoneNumberId ?? "");
+            setWabaId(wa.wabaId ?? "");
+          }
+          const tw = creds.find((c) => c.provider === "twilio");
+          if (tw) {
+            setTwilioPhone(tw.phoneNumber ?? "");
+          }
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchCreds();
+  }, []);
+
+  const handleSaveWhatsApp = async () => {
+    setSavingWA(true);
+    setSavedWA(false);
+    try {
+      const res = await fetch("/api/integrations/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumberId, wabaId, accessToken }),
+      });
+      if (res.ok) {
+        setSavedWA(true);
+        const { verified } = await res.json();
+        if (!verified) alert("Saved, but connection test failed. Check your credentials.");
+        // Refresh
+        const r2 = await fetch("/api/integrations");
+        if (r2.ok) setExistingCreds((await r2.json()).integrations ?? []);
+      }
+    } finally {
+      setSavingWA(false);
+    }
+  };
+
+  const handleSaveTwilio = async () => {
+    setSavingTwilio(true);
+    setSavedTwilio(false);
+    try {
+      const res = await fetch("/api/integrations/twilio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountSid, authToken, phoneNumber: twilioPhone }),
+      });
+      if (res.ok) {
+        setSavedTwilio(true);
+        const { verified } = await res.json();
+        if (!verified) alert("Saved, but connection test failed. Check your credentials.");
+        const r2 = await fetch("/api/integrations");
+        if (r2.ok) setExistingCreds((await r2.json()).integrations ?? []);
+      }
+    } finally {
+      setSavingTwilio(false);
+    }
+  };
+
+  const handleTest = async (credId: string) => {
+    setTestingId(credId);
+    try {
+      const res = await fetch(`/api/integrations/${credId}/test`, { method: "POST" });
+      const data = await res.json();
+      setTestResult((prev) => ({
+        ...prev,
+        [credId]: { ok: data.verified, label: data.verified ? "Connected ✓" : "Failed ✗" },
+      }));
+    } finally {
+      setTestingId(null);
+    }
+  };
+
+  const waCredential = existingCreds.find((c) => c.provider === "meta_whatsapp");
+  const twCredential = existingCreds.find((c) => c.provider === "twilio");
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#fbf8ff] text-[#1a1b22] font-sans">
-      {/* SideNavBar */}
       <aside className="w-64 h-full bg-[#2f3038] flex flex-col py-4 px-4 border-r border-[#777587] z-50 text-white shrink-0">
         <div className="mb-6 px-2">
           <h1 className="text-[18px] font-bold text-[#e2dfff]">Call-Pulse</h1>
@@ -18,42 +133,34 @@ export default function IntegrationsVaultPage() {
             <span className="material-symbols-outlined text-[20px] not-italic leading-none">dashboard</span>
             <span className="text-[13px]">Command Center</span>
           </a>
-          <a href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+          <a href="/activity-logs" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
             <span className="material-symbols-outlined text-[20px] not-italic leading-none">list_alt</span>
             <span className="text-[13px]">Activity Logs</span>
+          </a>
+          <a href="/conversations" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+            <span className="material-symbols-outlined text-[20px] not-italic leading-none">forum</span>
+            <span className="text-[13px]">Conversations</span>
+          </a>
+          <a href="/reports" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+            <span className="material-symbols-outlined text-[20px] not-italic leading-none">bar_chart</span>
+            <span className="text-[13px]">Reports</span>
           </a>
           <a href="/integrations" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#e2dfff] font-bold border-r-2 border-[#3525cd] bg-[#3525cd]/10 transition-colors">
             <span className="material-symbols-outlined text-[20px] not-italic leading-none">hub</span>
             <span className="text-[13px]">Integrations Vault</span>
           </a>
-          <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+          <a href="/automation" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
             <span className="material-symbols-outlined text-[20px] not-italic leading-none">smart_toy</span>
             <span className="text-[13px]">Automation</span>
           </a>
-          <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+          <a href="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
             <span className="material-symbols-outlined text-[20px] not-italic leading-none">settings</span>
             <span className="text-[13px]">Settings</span>
           </a>
         </nav>
-        <div className="mt-auto pt-4 border-t border-white/10 space-y-1">
-          <button className="w-full bg-[#4f46e5] text-white py-2.5 px-3 rounded-xl font-bold mb-3 hover:opacity-90 transition-all flex items-center justify-center gap-2 text-[13px]">
-            <span className="material-symbols-outlined text-[18px] not-italic leading-none">add</span>
-            New Automation
-          </button>
-          <a href="#" className="flex items-center gap-3 px-3 py-1.5 rounded-lg text-gray-300 hover:bg-white/5 transition-colors text-[13px]">
-            <span className="material-symbols-outlined text-[18px] not-italic leading-none">help</span>
-            <span>Support</span>
-          </a>
-          <a href="#" className="flex items-center gap-3 px-3 py-1.5 rounded-lg text-gray-300 hover:bg-white/5 transition-colors text-[13px]">
-            <span className="material-symbols-outlined text-[18px] not-italic leading-none">logout</span>
-            <span>Sign Out</span>
-          </a>
-        </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 h-full flex flex-col overflow-y-auto pb-24">
-        {/* TopAppBar */}
+      <div className="flex-1 h-full flex flex-col overflow-y-auto">
         <header className="sticky top-0 z-40 bg-[#fbf8ff]/90 backdrop-blur-md border-b border-[#c7c4d8] shadow-sm flex justify-between items-center px-6 py-3 shrink-0">
           <div className="flex items-center gap-6 flex-1">
             <div className="relative w-full max-w-sm flex items-center">
@@ -61,160 +168,160 @@ export default function IntegrationsVaultPage() {
               <input type="text" placeholder="Search vault..." className="w-full pl-10 pr-4 py-1.5 bg-[#f4f2fd] border border-[#c7c4d8] rounded-full focus:ring-2 focus:ring-[#3525cd]/20 focus:border-[#3525cd] outline-none text-[13px]" />
             </div>
           </div>
-          <div className="flex items-center gap-5">
-            <div className="flex items-center gap-3">
-              <button className="relative p-1.5 hover:scale-105 transition-all text-[#464555] flex items-center justify-center">
-                <span className="material-symbols-outlined text-[20px] not-italic leading-none">notifications</span>
-              </button>
-              <button className="p-1.5 hover:scale-105 transition-all text-[#464555] flex items-center justify-center">
-                <span className="material-symbols-outlined text-[20px] not-italic leading-none">bolt</span>
-              </button>
-            </div>
-            <div className="h-6 w-[1px] bg-[#c7c4d8]"></div>
-            <div className="w-9 h-9 rounded-full bg-[#4f46e5] flex items-center justify-center overflow-hidden border border-[#c7c4d8]">
-              <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHCmvXURD_GV_xws9JCAbpcHiG2TeoFoSCq6e8YZiCpNz7aMOjw6J2Se7rVhPY8B8HlSmqwLh9WDt2r7roK6CsSOi7EbErq-C4CMoKff5ynwadr8IAPs2UNRpFf4tlH4nv_VZmgEkR64Nh_aPj9gxeEYRL7_fEhKnPs_iUABeKOl7TYXBHIznTtvk9xRpA29IkEuN7SP-KauXCeUTWYOwqpV-T8koZgBvIYXMTOkA-G9s5Rs71guREYKY9q5RGZJY6D4yzVH47djtM" alt="Admin" className="w-full h-full object-cover" />
-            </div>
-          </div>
         </header>
 
-        {/* Content Container */}
-        <div className="max-w-4xl mx-auto px-6 py-8 w-full space-y-6">
+        <div className="max-w-4xl mx-auto px-6 py-8 w-full space-y-6 pb-20">
           <div>
-            <h1 className="text-[28px] font-bold text-[#1a1b22] mb-1">Integrations & Credentials Vault</h1>
-            <p className="text-[14px] text-[#464555]">Manage your secure connections to external providers and AI nodes.</p>
+            <h1 className="text-[24px] font-bold text-[#1a1b22]">Integrations Vault</h1>
+            <p className="text-[13px] text-[#464555]">Securely store and manage your API credentials. All tokens are AES-256 encrypted at rest.</p>
           </div>
 
-          <div className="space-y-6">
-            {/* 1. Twilio Card */}
-            <div className="bg-white border border-[#c7c4d8] rounded-xl shadow-sm p-6 transition-all hover:shadow-md">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-red-50 flex items-center justify-center border border-red-100">
-                    <span className="material-symbols-outlined text-red-600 text-[28px]">phone_in_talk</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[16px] font-semibold text-[#1a1b22]">Twilio Connection</h3>
-                    <p className="text-[12px] text-[#464555]">SMS and Voice API Infrastructure</p>
-                  </div>
+          {/* WhatsApp Card */}
+          <div className="bg-white border border-[#c7c4d8] rounded-2xl p-6 shadow-sm space-y-6">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                  <span className="material-symbols-outlined">forum</span>
                 </div>
-                <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-50 rounded-full border border-emerald-100">
-                  <span className="material-symbols-outlined text-[14px] text-emerald-700 not-italic leading-none">check_circle</span>
-                  <span className="text-[12px] text-emerald-700 font-bold">Active</span>
+                <div>
+                  <h3 className="text-[18px] font-bold text-[#1a1b22]">Meta WhatsApp Business</h3>
+                  <p className="text-[12px] text-[#464555]">Cloud API Integration for Messaging</p>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[12px] font-medium text-[#464555] block">Account SID</label>
-                  <input className="w-full bg-[#f4f2fd] border border-[#c7c4d8] rounded-lg px-3 py-2 text-[14px] outline-none focus:ring-2 focus:ring-[#3525cd]/20" type="text" defaultValue="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[12px] font-medium text-[#464555] block">Auth Token</label>
-                  <div className="relative flex items-center">
-                    <input className="w-full bg-[#f4f2fd] border border-[#c7c4d8] rounded-lg px-3 py-2 text-[14px] outline-none focus:ring-2 focus:ring-[#3525cd]/20" type={showTwilioToken ? "text" : "password"} defaultValue="secret_auth_token_12345" />
-                    <button onClick={() => setShowTwilioToken(!showTwilioToken)} className="absolute right-3 text-[#777587] hover:text-[#3525cd]">
-                      <span className="material-symbols-outlined text-[18px] not-italic leading-none">{showTwilioToken ? "visibility_off" : "visibility"}</span>
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-1 md:col-span-2">
-                  <label className="text-[12px] font-medium text-[#464555] block">Phone Number</label>
-                  <input className="w-full bg-[#f4f2fd] border border-[#c7c4d8] rounded-lg px-3 py-2 text-[14px] outline-none focus:ring-2 focus:ring-[#3525cd]/20" type="text" defaultValue="+1 (555) 012-3456" />
-                </div>
+              <div className="flex items-center gap-2">
+                {waCredential && (
+                  <span className={`px-3 py-1 text-[11px] font-bold rounded-full border ${waCredential.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"}`}>
+                    {waCredential.status === "active" ? "CONNECTED" : waCredential.status.toUpperCase()}
+                  </span>
+                )}
               </div>
+            </div>
 
-              <div className="mt-6 pt-4 border-t border-zinc-100 flex justify-end">
-                <button className="text-[#3525cd] font-semibold text-[14px] px-4 py-2 rounded-lg border border-[#3525cd] hover:bg-[#3525cd]/5 transition-all">
-                  Test Connection
+            {waCredential && (
+              <div className="bg-[#f4f2fd] rounded-xl p-3 text-[12px] text-[#464555] flex gap-4">
+                <span>Phone Number ID: <span className="font-mono font-bold">{waCredential.phoneNumberId}</span></span>
+                {waCredential.accessTokenMasked && <span>Token: <span className="font-mono">{waCredential.accessTokenMasked}</span></span>}
+                {waCredential.lastVerifiedAt && <span>Last verified: {new Date(waCredential.lastVerifiedAt).toLocaleDateString()}</span>}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[12px] font-bold text-[#464555] mb-1">Phone Number ID</label>
+                <input type="text" value={phoneNumberId} onChange={(e) => setPhoneNumberId(e.target.value)} className="w-full p-3 bg-[#f4f2fd] border border-[#c7c4d8] rounded-xl text-[13px] outline-none focus:border-[#3525cd]" placeholder="e.g. 109283746556473" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-bold text-[#464555] mb-1">WhatsApp Business Account ID (WABA ID)</label>
+                <input type="text" value={wabaId} onChange={(e) => setWabaId(e.target.value)} className="w-full p-3 bg-[#f4f2fd] border border-[#c7c4d8] rounded-xl text-[13px] outline-none focus:border-[#3525cd]" placeholder="e.g. 987654321012345" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-bold text-[#464555] mb-1">
+                  Permanent Access Token
+                  {waCredential?.accessTokenMasked && <span className="ml-2 text-[#777587] font-normal">Current: {waCredential.accessTokenMasked}</span>}
+                </label>
+                <textarea rows={2} value={accessToken} onChange={(e) => setAccessToken(e.target.value)} className="w-full p-3 bg-[#f4f2fd] border border-[#c7c4d8] rounded-xl text-[13px] outline-none focus:border-[#3525cd] font-mono" placeholder="Leave blank to keep existing token" />
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-4 border-t border-[#c7c4d8]">
+              <p className="text-[11px] text-[#464555]">Ensure this is a permanent system user token for uninterrupted service.</p>
+              <div className="flex items-center gap-3">
+                {waCredential && (
+                  <button
+                    onClick={() => handleTest(waCredential.id)}
+                    disabled={testingId === waCredential.id}
+                    className="border border-[#c7c4d8] text-[#1a1b22] px-4 py-2 rounded-xl text-[13px] font-bold hover:bg-gray-50 transition-all"
+                  >
+                    {testingId === waCredential.id ? "Testing..." : testResult[waCredential.id]?.label ?? "Test Connection"}
+                  </button>
+                )}
+                {savedWA && <span className="text-emerald-600 text-[12px] font-bold">Saved ✓</span>}
+                <button onClick={handleSaveWhatsApp} disabled={savingWA} className="bg-[#3525cd] text-white px-6 py-2.5 rounded-xl text-[13px] font-bold hover:opacity-90 transition-all">
+                  {savingWA ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* 2. Meta WhatsApp Card */}
-            <div className="bg-white border border-[#c7c4d8] rounded-xl shadow-sm p-6 transition-all hover:shadow-md">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center border border-emerald-100">
-                    <span className="material-symbols-outlined text-emerald-600 text-[28px]">chat</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[16px] font-semibold text-[#1a1b22]">Meta WhatsApp Business</h3>
-                    <p className="text-[12px] text-[#464555]">Cloud API Integration for Messaging</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-emerald-600 text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-                  <span className="text-[11px] text-emerald-600 font-bold uppercase tracking-wider">Verified Business</span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-[12px] font-medium text-[#464555] block">Phone Number ID</label>
-                  <input className="w-full bg-[#f4f2fd] border border-[#c7c4d8] rounded-lg px-3 py-2 text-[14px] outline-none focus:ring-2 focus:ring-[#3525cd]/20" type="text" defaultValue="109283746556473" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[12px] font-medium text-[#464555] block">WhatsApp Business Account ID</label>
-                  <input className="w-full bg-[#f4f2fd] border border-[#c7c4d8] rounded-lg px-3 py-2 text-[14px] outline-none focus:ring-2 focus:ring-[#3525cd]/20" type="text" defaultValue="987654321012345" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[12px] font-medium text-[#464555] block">Permanent Access Token</label>
-                  <div className="relative flex items-start">
-                    <textarea className="w-full bg-[#f4f2fd] border border-[#c7c4d8] rounded-lg px-3 py-2 text-[14px] outline-none focus:ring-2 focus:ring-[#3525cd]/20 resize-none" rows={3} defaultValue="EAAGl6ZA8ZC3ZAcBAO2ZBrZBZAmZArZA1vZA9ZBZCsZC8ZC8ZC5ZC4ZC3ZC2ZC1ZC0ZC9ZCZC8ZC7ZC6ZC5ZC4ZC3ZC2ZC1ZC0ZC9ZC8ZC7ZC6ZC5ZC4ZC3ZC2ZC1ZC0ZC9" />
-                    <button className="absolute right-3 bottom-3 text-[#777587] hover:text-[#3525cd]">
-                      <span className="material-symbols-outlined text-[18px] not-italic leading-none">content_copy</span>
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-[#464555] flex items-center gap-1 mt-1">
-                    <span className="material-symbols-outlined text-[14px] not-italic leading-none">info</span>
-                    Ensure this is a permanent system user token for uninterrupted service.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* AI Node Configuration */}
-            <div className="bg-white border border-[#c7c4d8] rounded-xl shadow-sm p-6 overflow-hidden relative group">
-              <div className="absolute -right-16 -top-16 w-64 h-64 bg-[#3525cd]/5 rounded-full blur-3xl"></div>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-lg bg-[#4f46e5] text-white flex items-center justify-center relative shadow-md">
-                  <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>hub</span>
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center border border-[#4f46e5]">
-                    <span className="material-symbols-outlined text-[12px] text-[#3525cd]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
-                  </div>
+          {/* Twilio Card */}
+          <div className="bg-white border border-[#c7c4d8] rounded-2xl p-6 shadow-sm space-y-6">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-red-50 rounded-xl flex items-center justify-center text-red-500">
+                  <span className="material-symbols-outlined">call</span>
                 </div>
                 <div>
-                  <h3 className="text-[16px] font-semibold text-[#1a1b22]">Nexus Intelligent Routing</h3>
-                  <p className="text-[12px] text-[#464555]">Universal API Gateway Settings</p>
+                  <h3 className="text-[18px] font-bold text-[#1a1b22]">Twilio</h3>
+                  <p className="text-[12px] text-[#464555]">Voice + SMS Integration</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg border border-zinc-100 bg-zinc-50/50">
-                  <p className="text-[11px] text-[#464555] mb-1 uppercase font-bold tracking-tight">Latency Optimization</p>
-                  <p className="text-[20px] font-bold text-[#3525cd]">24ms</p>
-                </div>
-                <div className="p-4 rounded-lg border border-zinc-100 bg-zinc-50/50">
-                  <p className="text-[11px] text-[#464555] mb-1 uppercase font-bold tracking-tight">Node Region</p>
-                  <p className="text-[20px] font-bold text-[#1a1b22]">us-east-1</p>
-                </div>
+              <div className="flex items-center gap-2">
+                {twCredential && (
+                  <span className={`px-3 py-1 text-[11px] font-bold rounded-full border ${twCredential.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"}`}>
+                    {twCredential.status === "active" ? "CONNECTED" : twCredential.status.toUpperCase()}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {twCredential && (
+              <div className="bg-[#f4f2fd] rounded-xl p-3 text-[12px] text-[#464555] flex gap-4">
+                {twCredential.accountSidMasked && <span>Account SID: <span className="font-mono">{twCredential.accountSidMasked}</span></span>}
+                {twCredential.authTokenMasked && <span>Auth Token: <span className="font-mono">{twCredential.authTokenMasked}</span></span>}
+                {twCredential.phoneNumber && <span>Phone: <span className="font-mono font-bold">{twCredential.phoneNumber}</span></span>}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[12px] font-bold text-[#464555] mb-1">Account SID
+                  {twCredential?.accountSidMasked && <span className="ml-2 text-[#777587] font-normal">Current: {twCredential.accountSidMasked}</span>}
+                </label>
+                <input type="text" value={accountSid} onChange={(e) => setAccountSid(e.target.value)} className="w-full p-3 bg-[#f4f2fd] border border-[#c7c4d8] rounded-xl text-[13px] outline-none focus:border-[#3525cd]" placeholder="Leave blank to keep existing" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-bold text-[#464555] mb-1">Auth Token
+                  {twCredential?.authTokenMasked && <span className="ml-2 text-[#777587] font-normal">Current: {twCredential.authTokenMasked}</span>}
+                </label>
+                <input type="password" value={authToken} onChange={(e) => setAuthToken(e.target.value)} className="w-full p-3 bg-[#f4f2fd] border border-[#c7c4d8] rounded-xl text-[13px] outline-none focus:border-[#3525cd]" placeholder="Leave blank to keep existing" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-bold text-[#464555] mb-1">Twilio Phone Number</label>
+                <input type="text" value={twilioPhone} onChange={(e) => setTwilioPhone(e.target.value)} className="w-full p-3 bg-[#f4f2fd] border border-[#c7c4d8] rounded-xl text-[13px] outline-none focus:border-[#3525cd]" placeholder="+1 555 000 0000" />
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-4 border-t border-[#c7c4d8]">
+              <div>
+                <p className="text-[11px] text-[#464555]">Set your Twilio Status Callback URL to:</p>
+                <code className="text-[11px] text-[#3525cd] font-mono">https://your-domain.com/api/webhooks/twilio/voice-status</code>
+              </div>
+              <div className="flex items-center gap-3">
+                {twCredential && (
+                  <button
+                    onClick={() => handleTest(twCredential.id)}
+                    disabled={testingId === twCredential.id}
+                    className="border border-[#c7c4d8] text-[#1a1b22] px-4 py-2 rounded-xl text-[13px] font-bold hover:bg-gray-50 transition-all"
+                  >
+                    {testingId === twCredential.id ? "Testing..." : testResult[twCredential.id]?.label ?? "Test Connection"}
+                  </button>
+                )}
+                {savedTwilio && <span className="text-emerald-600 text-[12px] font-bold">Saved ✓</span>}
+                <button onClick={handleSaveTwilio} disabled={savingTwilio || !accountSid || !authToken || !twilioPhone} className="bg-[#3525cd] text-white px-6 py-2.5 rounded-xl text-[13px] font-bold hover:opacity-90 transition-all disabled:opacity-40">
+                  {savingTwilio ? "Saving..." : "Save Changes"}
+                </button>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Sticky Bottom Bar */}
-        <div className="fixed bottom-0 left-64 right-0 bg-[#fbf8ff]/90 backdrop-blur-md py-4 px-8 z-40 flex items-center justify-between border-t border-[#c7c4d8]">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#3525cd] text-[18px]">sync_saved_locally</span>
-            <span className="text-[13px] text-[#464555] italic">Last synced 4 minutes ago</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="px-4 py-2 text-[#464555] hover:text-[#1a1b22] transition-colors font-semibold text-[14px]">
-              Discard Changes
-            </button>
-            <button className="bg-[#3525cd] text-white px-6 py-2 rounded-lg font-semibold text-[14px] shadow-lg hover:shadow-[#3525cd]/20 hover:scale-[1.02] transition-all">
-              Save Changes
-            </button>
+          {/* Webhook Reference */}
+          <div className="bg-[#2f3038] rounded-2xl p-6 text-white space-y-3">
+            <h3 className="text-[15px] font-bold">Webhook Configuration Reference</h3>
+            <div className="space-y-2 text-[12px] font-mono">
+              <div className="flex gap-2"><span className="text-emerald-400">POST</span> <span className="text-[#e2dfff]">/api/webhooks/twilio/voice-status</span> <span className="text-[#777587]">← Twilio Voice Status Callback</span></div>
+              <div className="flex gap-2"><span className="text-emerald-400">POST</span> <span className="text-[#e2dfff]">/api/webhooks/twilio/sms-inbound</span> <span className="text-[#777587]">← Twilio Messaging Webhook</span></div>
+              <div className="flex gap-2"><span className="text-blue-400">GET/POST</span> <span className="text-[#e2dfff]">/api/webhooks/whatsapp/inbound</span> <span className="text-[#777587]">← Meta WhatsApp Webhook</span></div>
+            </div>
           </div>
         </div>
       </div>

@@ -91,8 +91,12 @@ export default function AuthAndOnboarding() {
 
       {/* Right Side: Auth Form Centered */}
       <section className="flex flex-1 items-center justify-center bg-white px-[24px] py-[64px]">
-        <div className="w-full max-w-md flex items-center justify-center">
+        <div className="w-full max-w-md flex flex-col items-center justify-center gap-4">
           <SignIn routing="hash" />
+          <div className="flex items-center gap-4 text-[12px] text-[#464555]">
+            <a href="/privacy" className="hover:text-[#3525cd]">Privacy Policy</a>
+            <a href="/terms" className="hover:text-[#3525cd]">Terms of Service</a>
+          </div>
         </div>
       </section>
 
