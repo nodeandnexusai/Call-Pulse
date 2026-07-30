@@ -59,24 +59,29 @@ export async function POST(req: Request) {
 
     // Also upsert a business line for WhatsApp
     if (isValid) {
-      await prisma.businessLine.upsert({
+      const existingLine = await prisma.businessLine.findFirst({
         where: {
-          id: (
-            await prisma.businessLine.findFirst({
-              where: { businessId: business.id, phoneNumberId: phoneNumberId as never, provider: "whatsapp" },
-              select: { id: true },
-            })
-          )?.id ?? "new",
-        },
-        update: { isActive: true },
-        create: {
           businessId: business.id,
-          label: "WhatsApp Line",
           phoneNumber: phoneNumberId,
-          provider: "whatsapp",
-          isActive: true,
         },
+        select: { id: true },
       });
+
+      if (existingLine) {
+        await prisma.businessLine.update({
+          where: { id: existingLine.id },
+          data: { isActive: true },
+        });
+      } else {
+        await prisma.businessLine.create({
+          data: {
+            businessId: business.id,
+            label: "WhatsApp Business Line",
+            phoneNumber: phoneNumberId,
+            isActive: true,
+          },
+        });
+      }
     }
 
     return NextResponse.json({

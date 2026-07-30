@@ -56,7 +56,6 @@ model BusinessLine {
   businessId    String   @map("business_id")
   label         String
   phoneNumber   String   @map("phone_number")
-  provider      LineProvider
   isActive      Boolean  @default(true) @map("is_active")
   businessHours Json?    @map("business_hours")
   createdAt     DateTime @default(now()) @map("created_at")
@@ -69,22 +68,14 @@ model BusinessLine {
   @@map("business_lines")
 }
 
-enum LineProvider {
-  twilio
-  whatsapp
-}
-
 // ─── Encrypted Integration Credentials ────────────────────────────────────────
 model IntegrationCredential {
   id                   String            @id @default(uuid())
   businessId           String            @map("business_id")
   provider             CredentialProvider
-  accountSidEncrypted  String?           @map("account_sid_encrypted")
-  authTokenEncrypted   String?           @map("auth_token_encrypted")
   phoneNumberId        String?           @map("phone_number_id")
   wabaId               String?           @map("waba_id")
   accessTokenEncrypted String?           @map("access_token_encrypted")
-  phoneNumber          String?           @map("phone_number")
   status               CredentialStatus  @default(pending)
   lastVerifiedAt       DateTime?         @map("last_verified_at")
   createdAt            DateTime          @default(now()) @map("created_at")
@@ -97,7 +88,6 @@ model IntegrationCredential {
 }
 
 enum CredentialProvider {
-  twilio
   meta_whatsapp
 }
 
@@ -109,14 +99,13 @@ enum CredentialStatus {
 
 // ─── Calls ─────────────────────────────────────────────────────────────────────
 model Call {
-  id             String     @id @default(uuid())
-  businessId     String     @map("business_id")
-  lineId         String?    @map("line_id")
-  callerNumber   String     @map("caller_number")
-  callStatus     CallStatus @map("call_status")
-  twilioCallSid  String?    @map("twilio_call_sid")
-  receivedAt     DateTime   @default(now()) @map("received_at")
-  createdAt      DateTime   @default(now()) @map("created_at")
+  id           String     @id @default(uuid())
+  businessId   String     @map("business_id")
+  lineId       String?    @map("line_id")
+  callerNumber String     @map("caller_number")
+  callStatus   CallStatus @map("call_status")
+  receivedAt   DateTime   @default(now()) @map("received_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
 
   business Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   line     BusinessLine? @relation(fields: [lineId], references: [id])
@@ -191,7 +180,6 @@ model MessageTemplate {
 }
 
 enum MessageChannel {
-  sms
   whatsapp
 }
 

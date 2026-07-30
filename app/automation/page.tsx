@@ -202,20 +202,15 @@ export default function AutomationSettingsPage() {
           </div>
         </section>
 
-        {/* Channel selector */}
+        {/* Channel indicator */}
         <div className="bg-white border border-[#c7c4d8] rounded-xl p-5 shadow-sm flex items-center justify-between">
           <div>
             <h4 className="text-[14px] font-semibold">Send Channel</h4>
-            <p className="text-[12px] text-[#464555]">Choose which channel to send auto-responses through</p>
+            <p className="text-[12px] text-[#464555]">Automated responses are dispatched via Meta WhatsApp Business API</p>
           </div>
-          <select
-            value={channel}
-            onChange={(e) => setChannel(e.target.value)}
-            className="border border-[#c7c4d8] rounded-xl px-4 py-2 text-[13px] font-semibold bg-white outline-none focus:border-[#3525cd]"
-          >
-            <option value="whatsapp">WhatsApp</option>
-            <option value="sms">SMS</option>
-          </select>
+          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-1.5 rounded-xl text-[13px] font-bold">
+            WhatsApp
+          </span>
         </div>
 
         {/* Business Hours Toggle */}
@@ -236,7 +231,7 @@ export default function AutomationSettingsPage() {
             <div className="border-b border-[#c7c4d8] p-4 bg-[#f4f2fd] flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#464555] text-[18px]">chat_bubble</span>
-                <span className="text-[14px] font-semibold text-[#1a1b22]">Auto-Response Template ({channel === "whatsapp" ? "WhatsApp" : "SMS"})</span>
+                <span className="text-[14px] font-semibold text-[#1a1b22]">Auto-Response Template (WhatsApp)</span>
               </div>
               <span className="text-[12px] text-[#464555]">{templateText.length}/1024 Characters</span>
             </div>
@@ -291,7 +286,7 @@ export default function AutomationSettingsPage() {
                 </div>
                 <div className="p-3 border-t border-zinc-100 bg-zinc-50">
                   <div className="w-full h-7 bg-white border border-zinc-200 rounded-full flex items-center px-3 text-[10px] text-zinc-400">
-                    {channel === "whatsapp" ? "WhatsApp" : "iMessage"}
+                    WhatsApp
                   </div>
                 </div>
               </div>

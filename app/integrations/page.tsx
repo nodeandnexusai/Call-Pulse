@@ -4,14 +4,11 @@ import React, { useState, useEffect } from "react";
 
 type Credential = {
   id: string;
-  provider: "twilio" | "meta_whatsapp";
+  provider: "meta_whatsapp";
   status: string;
   lastVerifiedAt: string | null;
   phoneNumberId: string | null;
   wabaId: string | null;
-  phoneNumber: string | null;
-  accountSidMasked: string | null;
-  authTokenMasked: string | null;
   accessTokenMasked: string | null;
 };
 
@@ -21,19 +18,12 @@ export default function IntegrationsPage() {
   const [wabaId, setWabaId] = useState("");
   const [accessToken, setAccessToken] = useState("");
 
-  // Twilio fields
-  const [accountSid, setAccountSid] = useState("");
-  const [authToken, setAuthToken] = useState("");
-  const [twilioPhone, setTwilioPhone] = useState("");
-
   const [savingWA, setSavingWA] = useState(false);
-  const [savingTwilio, setSavingTwilio] = useState(false);
   const [savedWA, setSavedWA] = useState(false);
-  const [savedTwilio, setSavedTwilio] = useState(false);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<Record<string, { ok: boolean; label: string }>>({});
   const [existingCreds, setExistingCreds] = useState<Credential[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchCreds() {
@@ -48,10 +38,6 @@ export default function IntegrationsPage() {
           if (wa) {
             setPhoneNumberId(wa.phoneNumberId ?? "");
             setWabaId(wa.wabaId ?? "");
-          }
-          const tw = creds.find((c) => c.provider === "twilio");
-          if (tw) {
-            setTwilioPhone(tw.phoneNumber ?? "");
           }
         }
       } finally {
@@ -74,33 +60,11 @@ export default function IntegrationsPage() {
         setSavedWA(true);
         const { verified } = await res.json();
         if (!verified) alert("Saved, but connection test failed. Check your credentials.");
-        // Refresh
         const r2 = await fetch("/api/integrations");
         if (r2.ok) setExistingCreds((await r2.json()).integrations ?? []);
       }
     } finally {
       setSavingWA(false);
-    }
-  };
-
-  const handleSaveTwilio = async () => {
-    setSavingTwilio(true);
-    setSavedTwilio(false);
-    try {
-      const res = await fetch("/api/integrations/twilio", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accountSid, authToken, phoneNumber: twilioPhone }),
-      });
-      if (res.ok) {
-        setSavedTwilio(true);
-        const { verified } = await res.json();
-        if (!verified) alert("Saved, but connection test failed. Check your credentials.");
-        const r2 = await fetch("/api/integrations");
-        if (r2.ok) setExistingCreds((await r2.json()).integrations ?? []);
-      }
-    } finally {
-      setSavingTwilio(false);
     }
   };
 
@@ -119,7 +83,6 @@ export default function IntegrationsPage() {
   };
 
   const waCredential = existingCreds.find((c) => c.provider === "meta_whatsapp");
-  const twCredential = existingCreds.find((c) => c.provider === "twilio");
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#fbf8ff] text-[#1a1b22] font-sans">
@@ -185,7 +148,7 @@ export default function IntegrationsPage() {
                 </div>
                 <div>
                   <h3 className="text-[18px] font-bold text-[#1a1b22]">Meta WhatsApp Business</h3>
-                  <p className="text-[12px] text-[#464555]">Cloud API Integration for Messaging</p>
+                  <p className="text-[12px] text-[#464555]">Cloud API Integration for Messaging & Missed Call Detection</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -243,83 +206,10 @@ export default function IntegrationsPage() {
             </div>
           </div>
 
-          {/* Twilio Card */}
-          <div className="bg-white border border-[#c7c4d8] rounded-2xl p-6 shadow-sm space-y-6">
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-red-50 rounded-xl flex items-center justify-center text-red-500">
-                  <span className="material-symbols-outlined">call</span>
-                </div>
-                <div>
-                  <h3 className="text-[18px] font-bold text-[#1a1b22]">Twilio</h3>
-                  <p className="text-[12px] text-[#464555]">Voice + SMS Integration</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {twCredential && (
-                  <span className={`px-3 py-1 text-[11px] font-bold rounded-full border ${twCredential.status === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"}`}>
-                    {twCredential.status === "active" ? "CONNECTED" : twCredential.status.toUpperCase()}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {twCredential && (
-              <div className="bg-[#f4f2fd] rounded-xl p-3 text-[12px] text-[#464555] flex gap-4">
-                {twCredential.accountSidMasked && <span>Account SID: <span className="font-mono">{twCredential.accountSidMasked}</span></span>}
-                {twCredential.authTokenMasked && <span>Auth Token: <span className="font-mono">{twCredential.authTokenMasked}</span></span>}
-                {twCredential.phoneNumber && <span>Phone: <span className="font-mono font-bold">{twCredential.phoneNumber}</span></span>}
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-[12px] font-bold text-[#464555] mb-1">Account SID
-                  {twCredential?.accountSidMasked && <span className="ml-2 text-[#777587] font-normal">Current: {twCredential.accountSidMasked}</span>}
-                </label>
-                <input type="text" value={accountSid} onChange={(e) => setAccountSid(e.target.value)} className="w-full p-3 bg-[#f4f2fd] border border-[#c7c4d8] rounded-xl text-[13px] outline-none focus:border-[#3525cd]" placeholder="Leave blank to keep existing" />
-              </div>
-              <div>
-                <label className="block text-[12px] font-bold text-[#464555] mb-1">Auth Token
-                  {twCredential?.authTokenMasked && <span className="ml-2 text-[#777587] font-normal">Current: {twCredential.authTokenMasked}</span>}
-                </label>
-                <input type="password" value={authToken} onChange={(e) => setAuthToken(e.target.value)} className="w-full p-3 bg-[#f4f2fd] border border-[#c7c4d8] rounded-xl text-[13px] outline-none focus:border-[#3525cd]" placeholder="Leave blank to keep existing" />
-              </div>
-              <div>
-                <label className="block text-[12px] font-bold text-[#464555] mb-1">Twilio Phone Number</label>
-                <input type="text" value={twilioPhone} onChange={(e) => setTwilioPhone(e.target.value)} className="w-full p-3 bg-[#f4f2fd] border border-[#c7c4d8] rounded-xl text-[13px] outline-none focus:border-[#3525cd]" placeholder="+1 555 000 0000" />
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center pt-4 border-t border-[#c7c4d8]">
-              <div>
-                <p className="text-[11px] text-[#464555]">Set your Twilio Status Callback URL to:</p>
-                <code className="text-[11px] text-[#3525cd] font-mono">https://your-domain.com/api/webhooks/twilio/voice-status</code>
-              </div>
-              <div className="flex items-center gap-3">
-                {twCredential && (
-                  <button
-                    onClick={() => handleTest(twCredential.id)}
-                    disabled={testingId === twCredential.id}
-                    className="border border-[#c7c4d8] text-[#1a1b22] px-4 py-2 rounded-xl text-[13px] font-bold hover:bg-gray-50 transition-all"
-                  >
-                    {testingId === twCredential.id ? "Testing..." : testResult[twCredential.id]?.label ?? "Test Connection"}
-                  </button>
-                )}
-                {savedTwilio && <span className="text-emerald-600 text-[12px] font-bold">Saved ✓</span>}
-                <button onClick={handleSaveTwilio} disabled={savingTwilio || !accountSid || !authToken || !twilioPhone} className="bg-[#3525cd] text-white px-6 py-2.5 rounded-xl text-[13px] font-bold hover:opacity-90 transition-all disabled:opacity-40">
-                  {savingTwilio ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            </div>
-          </div>
-
           {/* Webhook Reference */}
           <div className="bg-[#2f3038] rounded-2xl p-6 text-white space-y-3">
             <h3 className="text-[15px] font-bold">Webhook Configuration Reference</h3>
             <div className="space-y-2 text-[12px] font-mono">
-              <div className="flex gap-2"><span className="text-emerald-400">POST</span> <span className="text-[#e2dfff]">/api/webhooks/twilio/voice-status</span> <span className="text-[#777587]">← Twilio Voice Status Callback</span></div>
-              <div className="flex gap-2"><span className="text-emerald-400">POST</span> <span className="text-[#e2dfff]">/api/webhooks/twilio/sms-inbound</span> <span className="text-[#777587]">← Twilio Messaging Webhook</span></div>
               <div className="flex gap-2"><span className="text-blue-400">GET/POST</span> <span className="text-[#e2dfff]">/api/webhooks/whatsapp/inbound</span> <span className="text-[#777587]">← Meta WhatsApp Webhook</span></div>
             </div>
           </div>

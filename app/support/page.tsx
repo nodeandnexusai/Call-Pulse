@@ -121,7 +121,7 @@ export default function SupportPage() {
                       type="text" 
                       value={ticketSubject} 
                       onChange={(e) => setTicketSubject(e.target.value)}
-                      placeholder="e.g. Twilio Webhook Timeout / WhatsApp API Sync" 
+                      placeholder="e.g. Meta Webhook Verification / WhatsApp API Sync" 
                       className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2.5 outline-none text-[13px] focus:border-[#3525cd]"
                       required
                     />
@@ -150,12 +150,12 @@ export default function SupportPage() {
                 <h3 className="text-[15px] font-bold text-[#1a1b22]">Frequently Asked Questions</h3>
                 <div className="space-y-3 text-[13px]">
                   <div className="p-3 bg-zinc-50 rounded-lg border border-zinc-100">
-                    <p className="font-bold text-[#1a1b22]">How to configure Twilio webhooks?</p>
-                    <p className="text-[12px] text-[#464555] mt-1">Go to Integrations Vault and paste your secure webhook URL into your Twilio console.</p>
+                    <p className="font-bold text-[#1a1b22]">How to configure Meta WhatsApp webhooks?</p>
+                    <p className="text-[12px] text-[#464555] mt-1">Go to Integrations Vault and copy your webhook URL into Meta Developer Console.</p>
                   </div>
                   <div className="p-3 bg-zinc-50 rounded-lg border border-zinc-100">
-                    <p className="font-bold text-[#1a1b22]">Why are SMS replies delayed?</p>
-                    <p className="text-[12px] text-[#464555] mt-1">Check your Response Delay setting under Automation conditions (default is 45s).</p>
+                    <p className="font-bold text-[#1a1b22]">Why are WhatsApp replies delayed?</p>
+                    <p className="text-[12px] text-[#464555] mt-1">Check your Response Delay setting under Automation conditions.</p>
                   </div>
                 </div>
               </div>

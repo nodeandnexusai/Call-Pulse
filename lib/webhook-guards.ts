@@ -1,4 +1,4 @@
-import twilio from "twilio";
+import { createHmac, timingSafeEqual } from "crypto";
 
 type RateLimitConfig = {
   limit: number;
@@ -47,27 +47,29 @@ export function checkRateLimit(key: string, config: RateLimitConfig): boolean {
   return true;
 }
 
-export function validateTwilioWebhook(req: Request, bodyText: string): boolean {
-  const authToken = process.env.TWILIO_WEBHOOK_AUTH_TOKEN;
-  const signature = req.headers.get("x-twilio-signature") ?? "";
-
-  if (!authToken || !signature) {
-    return false;
+/** Reconstruct the public webhook URL if needed. */
+export function getWebhookUrl(req: Request): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (appUrl) {
+    const path = new URL(req.url).pathname;
+    return `${appUrl.replace(/\/$/, "")}${path}`;
   }
-
-  const params: Record<string, string> = {};
-  new URLSearchParams(bodyText).forEach((value, key) => {
-    params[key] = value;
-  });
-
-  return twilio.validateRequest(authToken, signature, req.url, params);
+  return req.url;
 }
 
-export function validateMetaWebhook(req: Request, bodyText: string): boolean {
-  const secret =
-    process.env.META_APP_SECRET ??
+function getMetaAppSecret(): string | undefined {
+  return (
     process.env.WHATSAPP_APP_SECRET ??
-    process.env.FACEBOOK_APP_SECRET;
+    process.env.META_APP_SECRET ??
+    process.env.FACEBOOK_APP_SECRET
+  );
+}
+
+/**
+ * Validates Meta WhatsApp inbound webhook signature (X-Hub-Signature-256 header).
+ */
+export function validateMetaWebhook(req: Request, bodyText: string): boolean {
+  const secret = getMetaAppSecret();
   const signature = req.headers.get("x-hub-signature-256") ?? "";
 
   if (!secret || !signature.startsWith("sha256=")) {
@@ -75,7 +77,7 @@ export function validateMetaWebhook(req: Request, bodyText: string): boolean {
   }
 
   const expected = Buffer.from(
-    `sha256=${require("crypto").createHmac("sha256", secret).update(bodyText).digest("hex")}`
+    `sha256=${createHmac("sha256", secret).update(bodyText).digest("hex")}`
   );
   const actual = Buffer.from(signature);
 
@@ -83,5 +85,5 @@ export function validateMetaWebhook(req: Request, bodyText: string): boolean {
     return false;
   }
 
-  return require("crypto").timingSafeEqual(actual, expected);
+  return timingSafeEqual(actual, expected);
 }

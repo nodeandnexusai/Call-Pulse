@@ -1,6 +1,5 @@
 import { prisma } from "./prisma";
 import { decrypt } from "./encryption";
-import { MessageChannel } from "@prisma/client";
 
 export type SendResult = {
   success: boolean;
@@ -9,14 +8,53 @@ export type SendResult = {
 };
 
 /**
- * Fetches decrypted credentials for a business's provider.
+ * Direct WhatsApp Cloud API HTTP request helper (Part B2 requirement).
  */
-async function getDecryptedCreds(businessId: string, provider: "twilio" | "meta_whatsapp") {
+export async function sendWhatsAppMessage({
+  to,
+  body,
+  phoneNumberId,
+  accessToken,
+}: {
+  to: string;
+  body: string;
+  phoneNumberId: string;
+  accessToken: string;
+}) {
+  const response = await fetch(
+    `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to,
+        type: "text",
+        text: { body },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`WhatsApp send failed: ${JSON.stringify(error)}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetches decrypted WhatsApp credentials for a business.
+ */
+async function getDecryptedCreds(businessId: string) {
   const cred = await prisma.integrationCredential.findUnique({
-    where: { businessId_provider: { businessId, provider } },
+    where: { businessId_provider: { businessId, provider: "meta_whatsapp" } },
   });
   if (!cred || cred.status !== "active") {
-    throw new Error(`No active ${provider} credentials for business ${businessId}`);
+    throw new Error(`No active Meta WhatsApp credentials for business ${businessId}`);
   }
   return cred;
 }
@@ -30,97 +68,35 @@ export async function sendWhatsApp(
   body: string
 ): Promise<SendResult> {
   try {
-    const cred = await getDecryptedCreds(businessId, "meta_whatsapp");
+    const cred = await getDecryptedCreds(businessId);
     const accessToken = decrypt(cred.accessTokenEncrypted!);
     const phoneNumberId = cred.phoneNumberId!;
 
     const toFormatted = to.replace(/[^0-9]/g, "");
+    const data = await sendWhatsAppMessage({
+      to: toFormatted,
+      body,
+      phoneNumberId,
+      accessToken,
+    });
 
-    const res = await fetch(
-      `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: toFormatted,
-          type: "text",
-          text: { body },
-        }),
-      }
-    );
-
-    if (!res.ok) {
-      const err = await res.json();
-      return { success: false, error: JSON.stringify(err) };
-    }
-
-    const data = await res.json();
     const msgId = data?.messages?.[0]?.id;
     return { success: true, providerMessageId: msgId };
   } catch (err: unknown) {
-    return { success: false, error: String(err) };
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 
 /**
- * Sends an SMS via Twilio REST API.
- */
-export async function sendSMS(
-  businessId: string,
-  to: string,
-  body: string
-): Promise<SendResult> {
-  try {
-    const cred = await getDecryptedCreds(businessId, "twilio");
-    const accountSid = decrypt(cred.accountSidEncrypted!);
-    const authToken = decrypt(cred.authTokenEncrypted!);
-    const from = cred.phoneNumber!;
-
-    const params = new URLSearchParams({
-      To: to,
-      From: from,
-      Body: body,
-    });
-
-    const res = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: "Basic " + Buffer.from(`${accountSid}:${authToken}`).toString("base64"),
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: params.toString(),
-      }
-    );
-
-    if (!res.ok) {
-      const err = await res.json();
-      return { success: false, error: err?.message ?? "Twilio error" };
-    }
-
-    const data = await res.json();
-    return { success: true, providerMessageId: data.sid };
-  } catch (err: unknown) {
-    return { success: false, error: String(err) };
-  }
-}
-
-/**
- * Unified send dispatcher.
+ * Unified send dispatcher (WhatsApp only).
  */
 export async function sendMessage(
   businessId: string,
   to: string,
-  body: string,
-  channel: MessageChannel
+  body: string
 ): Promise<SendResult> {
-  if (channel === MessageChannel.whatsapp) {
-    return sendWhatsApp(businessId, to, body);
-  }
-  return sendSMS(businessId, to, body);
+  return sendWhatsApp(businessId, to, body);
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Call-Pulse",
@@ -10,7 +11,7 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-[#fbf8ff] text-[#1a1b22] font-sans">
       <header className="border-b border-[#c7c4d8] bg-white sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-6 py-4 flex justify-between items-center">
-          <a href="/" className="text-[18px] font-bold text-[#3525cd]">Call-Pulse</a>
+          <Link href="/" className="text-[18px] font-bold text-[#3525cd]">Call-Pulse</Link>
           <div className="flex gap-4 text-[13px]">
             <a href="/terms" className="text-[#464555] hover:text-[#3525cd]">Terms of Service</a>
             <a href="/dashboard" className="bg-[#3525cd] text-white px-4 py-1.5 rounded-lg font-bold hover:opacity-90 transition-all">Dashboard</a>
@@ -30,7 +31,7 @@ export default function PrivacyPage() {
             <h2 className="text-[20px] font-bold mb-3">1. Overview</h2>
             <p>
               Call-Pulse (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is a missed-call automation platform that helps businesses
-              automatically respond to missed calls via SMS and WhatsApp. This Privacy Policy explains how we collect,
+              automatically respond to missed calls via WhatsApp. This Privacy Policy explains how we collect,
               use, disclose, and protect information when you use our service.
             </p>
             <p className="mt-3">
@@ -49,14 +50,14 @@ export default function PrivacyPage() {
             <h3 className="text-[16px] font-semibold mb-2 mt-4">2.3 Communication Data</h3>
             <p>To provide the core service, we process:</p>
             <ul className="list-disc pl-6 mt-2 space-y-1">
-              <li><strong>Caller phone numbers</strong> of individuals who call your business lines (inbound call data from Twilio)</li>
-              <li><strong>Message content</strong> of automated SMS/WhatsApp responses sent to callers and any replies received</li>
-              <li><strong>Call metadata</strong> (call status, timestamp, duration) from Twilio webhook events</li>
+              <li><strong>Caller phone numbers</strong> of individuals who call your business lines (inbound call data from Meta WhatsApp)</li>
+              <li><strong>Message content</strong> of automated WhatsApp responses sent to callers and any replies received</li>
+              <li><strong>Call metadata</strong> (call status, timestamp) from Meta webhook events</li>
             </ul>
 
             <h3 className="text-[16px] font-semibold mb-2 mt-4">2.4 Integration Credentials</h3>
             <p>
-              API keys and tokens for third-party integrations (Twilio Account SID/Auth Token, Meta WhatsApp Access Token)
+              API keys and tokens for third-party integrations (Meta WhatsApp Access Token)
               are collected and stored <strong>encrypted at rest</strong> using AES-256-GCM encryption. Credentials are
               never stored in plaintext and are never returned unmasked via any API response.
             </p>
@@ -70,7 +71,7 @@ export default function PrivacyPage() {
             <ul className="list-disc pl-6 space-y-2">
               <li>To provide the missed-call auto-response service on your behalf</li>
               <li>To display analytics and performance metrics in your dashboard</li>
-              <li>To send automated messages to callers via your connected Twilio/WhatsApp accounts</li>
+              <li>To send automated messages to callers via your connected WhatsApp accounts</li>
               <li>To authenticate you and secure your account</li>
               <li>To improve the platform and debug issues</li>
               <li>To comply with legal obligations</li>
@@ -91,14 +92,9 @@ export default function PrivacyPage() {
                 </thead>
                 <tbody className="divide-y divide-[#c7c4d8]">
                   <tr>
-                    <td className="py-3 px-4 font-semibold">Twilio, Inc.</td>
-                    <td className="py-3 px-4">SMS sending and call event webhooks</td>
-                    <td className="py-3 px-4">Phone numbers, message body, call metadata</td>
-                  </tr>
-                  <tr>
                     <td className="py-3 px-4 font-semibold">Meta Platforms, Inc.</td>
-                    <td className="py-3 px-4">WhatsApp Business API messaging</td>
-                    <td className="py-3 px-4">Phone numbers, message body</td>
+                    <td className="py-3 px-4">WhatsApp Business API messaging and call webhooks</td>
+                    <td className="py-3 px-4">Phone numbers, message body, call status</td>
                   </tr>
                   <tr>
                     <td className="py-3 px-4 font-semibold">Supabase, Inc.</td>
@@ -135,7 +131,7 @@ export default function PrivacyPage() {
             <p>
               We implement industry-standard security measures including AES-256-GCM encryption for credentials at rest,
               TLS encryption for all data in transit, tenant isolation ensuring each business can only access its own data,
-              and webhook signature validation for all inbound Twilio and Meta events.
+              and webhook signature validation for all inbound Meta events.
             </p>
           </section>
 

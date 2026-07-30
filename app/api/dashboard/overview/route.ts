@@ -11,7 +11,6 @@ export async function GET() {
       activeLines,
       totalLeadsRecovered,
       totalReplies,
-      twilioCredential,
       whatsappCredential,
     ] = await Promise.all([
       prisma.call.count({
@@ -31,12 +30,6 @@ export async function GET() {
       }),
       prisma.integrationCredential.findUnique({
         where: {
-          businessId_provider: { businessId: business.id, provider: "twilio" },
-        },
-        select: { status: true, lastVerifiedAt: true },
-      }),
-      prisma.integrationCredential.findUnique({
-        where: {
           businessId_provider: {
             businessId: business.id,
             provider: "meta_whatsapp",
@@ -47,13 +40,10 @@ export async function GET() {
     ]);
 
     // Determine system status
-    const hasActiveCreds =
-      twilioCredential?.status === "active" ||
-      whatsappCredential?.status === "active";
-
+    const hasActiveCreds = whatsappCredential?.status === "active";
     const systemStatus = hasActiveCreds
       ? "active"
-      : twilioCredential || whatsappCredential
+      : whatsappCredential
       ? "degraded"
       : "offline";
 
@@ -79,7 +69,6 @@ export async function GET() {
         avgResponse._avg.avgResponseTimeSeconds ?? 0
       ),
       integrations: {
-        twilio: twilioCredential?.status ?? "not_configured",
         whatsapp: whatsappCredential?.status ?? "not_configured",
       },
     });

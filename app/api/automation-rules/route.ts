@@ -55,8 +55,14 @@ export async function POST(req: Request) {
 
     let rule;
     if (id) {
+      const existing = await prisma.automationRule.findFirst({
+        where: { id, businessId: business.id },
+      });
+      if (!existing) {
+        return NextResponse.json({ error: "Rule not found" }, { status: 404 });
+      }
       rule = await prisma.automationRule.update({
-        where: { id },
+        where: { id: existing.id },
         data: {
           lineId: lineId ?? null,
           isActive: isActive ?? true,

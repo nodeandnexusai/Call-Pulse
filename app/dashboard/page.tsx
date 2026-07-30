@@ -9,7 +9,7 @@ type OverviewData = {
   totalLeadsRecovered: number;
   recoveryRate: number;
   avgResponseTimeSeconds: number;
-  integrations: { twilio: string; whatsapp: string };
+  integrations: { whatsapp: string };
 };
 
 type ActivityItem = {
@@ -194,7 +194,7 @@ export default function CommandCenterPage() {
                 </h3>
               )}
               <p className="text-[12px] text-[#464555] mt-2">
-                Twilio: {overview?.integrations.twilio ?? "—"} · WA: {overview?.integrations.whatsapp ?? "—"}
+                WhatsApp: {overview?.integrations.whatsapp ?? "—"}
               </p>
             </div>
 
@@ -247,7 +247,7 @@ export default function CommandCenterPage() {
             ) : feed.length === 0 ? (
               <div className="px-5 py-12 text-center">
                 <span className="material-symbols-outlined text-[40px] text-[#c7c4d8] not-italic leading-none">phone_missed</span>
-                <p className="text-[13px] text-[#464555] mt-3">No activity yet. Calls will appear here once Twilio webhooks are configured.</p>
+                <p className="text-[13px] text-[#464555] mt-3">No activity yet. Calls will appear here once WhatsApp webhooks are configured.</p>
               </div>
             ) : (
               <div className="divide-y divide-[#f0eef8]">

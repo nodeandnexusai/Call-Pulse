@@ -2,13 +2,18 @@ import { NextResponse } from "next/server";
 import { requireBusiness } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/encryption";
-import twilio from "twilio";
+import { checkRateLimit, getClientIp } from "@/lib/webhook-guards";
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ip = getClientIp(req);
+    if (!checkRateLimit(`integration-test:${ip}`, { limit: 10, windowMs: 60_000 })) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const { business } = await requireBusiness();
     const { id } = await params;
 
@@ -22,17 +27,7 @@ export async function POST(
 
     let isValid = false;
 
-    if (cred.provider === "twilio") {
-      try {
-        const accountSid = decrypt(cred.accountSidEncrypted!);
-        const authToken = decrypt(cred.authTokenEncrypted!);
-        const client = twilio(accountSid, authToken);
-        await client.api.accounts(accountSid).fetch();
-        isValid = true;
-      } catch {
-        isValid = false;
-      }
-    } else if (cred.provider === "meta_whatsapp") {
+    if (cred.provider === "meta_whatsapp") {
       try {
         const accessToken = decrypt(cred.accessTokenEncrypted!);
         const res = await fetch(
@@ -46,7 +41,7 @@ export async function POST(
     }
 
     const updated = await prisma.integrationCredential.update({
-      where: { id: cred.id },
+      where: { id: cred.id, businessId: business.id },
       data: {
         status: isValid ? "active" : "failed",
         lastVerifiedAt: isValid ? new Date() : cred.lastVerifiedAt,

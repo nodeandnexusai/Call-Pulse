@@ -126,8 +126,35 @@ export default function ConversationsPage() {
     }
   }
 
-  useEffect(() => { fetchLeads(1); setPage(1); }, [statusFilter, scoreFilter]);
-  useEffect(() => { fetchLeads(page); }, [page]);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLeads() {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: "20",
+          ...(statusFilter ? { status: statusFilter } : {}),
+          ...(scoreFilter ? { score: scoreFilter } : {}),
+        });
+        const res = await fetch(`/api/leads?${params}`);
+        if (!cancelled && res.ok) {
+          const data = await res.json();
+          setLeads(data.items ?? []);
+          setTotal(data.total ?? 0);
+          setTotalPages(data.totalPages ?? 1);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void loadLeads();
+    return () => {
+      cancelled = true;
+    };
+  }, [page, statusFilter, scoreFilter]);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#fbf8ff] text-[#1a1b22] font-sans">

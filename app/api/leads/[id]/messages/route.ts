@@ -58,7 +58,7 @@ export async function POST(
       return NextResponse.json({ error: "Lead not found" }, { status: 404 });
     }
 
-    const result = await sendMessage(business.id, lead.phoneNumber, message, channel);
+    const result = await sendMessage(business.id, lead.phoneNumber, message);
 
     const msg = await prisma.message.create({
       data: {

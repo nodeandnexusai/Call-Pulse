@@ -20,11 +20,11 @@ export async function POST(req: Request) {
   try {
     const { business } = await requireBusiness();
     const body = await req.json();
-    const { label, phoneNumber, provider, businessHours } = body;
+    const { label, phoneNumber, businessHours } = body;
 
-    if (!label || !phoneNumber || !provider) {
+    if (!label || !phoneNumber) {
       return NextResponse.json(
-        { error: "label, phoneNumber, and provider are required" },
+        { error: "label and phoneNumber are required" },
         { status: 400 }
       );
     }
@@ -34,7 +34,6 @@ export async function POST(req: Request) {
         businessId: business.id,
         label,
         phoneNumber,
-        provider,
         businessHours: businessHours ?? null,
         isActive: true,
       },

@@ -229,7 +229,7 @@ export default function ActivityLogsPage() {
                     <tr>
                       <td colSpan={6} className="py-16 text-center text-[#464555]">
                         <span className="material-symbols-outlined text-[40px] text-[#c7c4d8] not-italic leading-none block mb-3">phone_missed</span>
-                        No activity found. Configure Twilio webhooks to start receiving calls.
+                        No activity found. Configure WhatsApp webhooks to start receiving missed call events.
                       </td>
                     </tr>
                   ) : (

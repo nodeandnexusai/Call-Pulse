@@ -21,14 +21,6 @@ export async function GET() {
       createdAt: cred.createdAt,
       phoneNumberId: cred.phoneNumberId,
       wabaId: cred.wabaId,
-      phoneNumber: cred.phoneNumber,
-      // Masked secrets
-      accountSidMasked: cred.accountSidEncrypted
-        ? maskSecret(tryDecrypt(cred.accountSidEncrypted))
-        : null,
-      authTokenMasked: cred.authTokenEncrypted
-        ? maskSecret(tryDecrypt(cred.authTokenEncrypted))
-        : null,
       accessTokenMasked: cred.accessTokenEncrypted
         ? maskSecret(tryDecrypt(cred.accessTokenEncrypted))
         : null,

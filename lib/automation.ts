@@ -114,7 +114,7 @@ export async function triggerAutomation(callId: string): Promise<void> {
 
   const lead = existingLead
     ? await prisma.lead.update({
-        where: { id: existingLead.id },
+        where: { id: existingLead.id, businessId: business.id },
         data: {
           status: LeadStatus.messaged,
           updatedAt: new Date(),
@@ -132,8 +132,8 @@ export async function triggerAutomation(callId: string): Promise<void> {
       });
 
   // Send the message
-  const channel = template.channel as MessageChannel;
-  const result = await sendMessage(business.id, call.callerNumber, rendered, channel);
+  const channel = MessageChannel.whatsapp;
+  const result = await sendMessage(business.id, call.callerNumber, rendered);
 
   // Log the outbound message
   await prisma.message.create({
@@ -156,7 +156,6 @@ export async function triggerAutomation(callId: string): Promise<void> {
         businessId: business.id,
         isActive: true,
         sequenceStep: 2,
-        channel: template.channel,
       },
     });
 
@@ -165,7 +164,7 @@ export async function triggerAutomation(callId: string): Promise<void> {
         Date.now() + followUpTemplate.delayMinutes * 60 * 1000
       );
       await prisma.lead.update({
-        where: { id: lead.id },
+        where: { id: lead.id, businessId: business.id },
         data: { nextFollowUpAt, sequenceStep: 2 },
       });
     }
@@ -213,8 +212,7 @@ export async function processFollowUpSequences(): Promise<number> {
     const result = await sendMessage(
       lead.businessId,
       lead.phoneNumber,
-      rendered,
-      template.channel as MessageChannel
+      rendered
     );
 
     await prisma.message.create({
@@ -222,7 +220,7 @@ export async function processFollowUpSequences(): Promise<number> {
         businessId: lead.businessId,
         leadId: lead.id,
         direction: MessageDirection.outbound,
-        channel: template.channel as MessageChannel,
+        channel: MessageChannel.whatsapp,
         body: rendered,
         status: result.success ? MessageStatus.sent : MessageStatus.failed,
         providerMessageId: result.providerMessageId,

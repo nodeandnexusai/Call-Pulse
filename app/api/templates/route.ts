@@ -12,7 +12,7 @@ export async function GET(req: Request) {
       where: {
         businessId: business.id,
         isActive: true,
-        ...(channel ? { channel: channel as "sms" | "whatsapp" } : {}),
+        ...(channel ? { channel: "whatsapp" as const } : {}),
       },
       orderBy: [{ channel: "asc" }, { sequenceStep: "asc" }],
     });
@@ -39,8 +39,14 @@ export async function POST(req: Request) {
 
     let template;
     if (id) {
+      const existing = await prisma.messageTemplate.findFirst({
+        where: { id, businessId: business.id },
+      });
+      if (!existing) {
+        return NextResponse.json({ error: "Template not found" }, { status: 404 });
+      }
       template = await prisma.messageTemplate.update({
-        where: { id },
+        where: { id: existing.id },
         data: {
           name,
           channel,

@@ -34,8 +34,8 @@ export default function AuthAndOnboarding() {
   };
 
   const stepTitles: { [key: number]: string } = {
-    1: "Connect Twilio",
-    2: "Connect WhatsApp",
+    1: "Meta WhatsApp Setup",
+    2: "Business Account",
     3: "Test System",
   };
 
@@ -133,14 +133,14 @@ export default function AuthAndOnboarding() {
               <div className="min-h-[280px]">
                 {currentStep === 1 && (
                   <div>
-                    <p className="text-[14px] text-[#464555] mb-[24px]">Provide your Twilio credentials to allow Node & Nexus to monitor your incoming calls and intercept misses.</p>
+                    <p className="text-[14px] text-[#464555] mb-[24px]">Provide your Meta WhatsApp Business API credentials to detect missed calls and send automated replies.</p>
                     <div className="space-y-[16px]">
                       <div className="space-y-[4px]">
-                        <label className="text-[12px] font-bold text-[#1a1b22]">Account SID</label>
-                        <input className="w-full rounded-xl border border-[#c7c4d8] p-[16px] focus:border-[#3525cd] focus:ring-1 focus:ring-[#3525cd] outline-none" placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxx" type="text" />
+                        <label className="text-[12px] font-bold text-[#1a1b22]">Phone Number ID</label>
+                        <input className="w-full rounded-xl border border-[#c7c4d8] p-[16px] focus:border-[#3525cd] focus:ring-1 focus:ring-[#3525cd] outline-none" placeholder="109283746556473" type="text" />
                       </div>
                       <div className="space-y-[4px]">
-                        <label className="text-[12px] font-bold text-[#1a1b22]">Auth Token</label>
+                        <label className="text-[12px] font-bold text-[#1a1b22]">Permanent Access Token</label>
                         <input className="w-full rounded-xl border border-[#c7c4d8] p-[16px] focus:border-[#3525cd] focus:ring-1 focus:ring-[#3525cd] outline-none" placeholder="••••••••••••••••••••••••" type="password" />
                       </div>
                       <div className="flex items-center gap-[16px] p-[16px] bg-[#f4f2fd] rounded-xl border border-[#3525cd]/10">
@@ -184,7 +184,7 @@ export default function AuthAndOnboarding() {
                     </div>
                     <div className="mt-[24px] p-[16px] bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 flex items-center gap-[16px]">
                       <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                      <span className="text-[13px] font-medium">All systems operational. Twilio and WhatsApp are talking.</span>
+                      <span className="text-[13px] font-medium">All systems operational. Meta WhatsApp Business API active.</span>
                     </div>
                   </div>
                 )}

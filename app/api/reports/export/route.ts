@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { subDays, startOfDay, format } from "date-fns";
 import PDFDocument from "pdfkit";
 
+type PdfDoc = InstanceType<typeof PDFDocument>;
+
 export async function GET(req: Request) {
   try {
     const { business } = await requireBusiness();
@@ -89,7 +91,7 @@ export async function GET(req: Request) {
         doc.end();
       });
 
-      return new NextResponse(pdfBuffer, {
+      return new NextResponse(new Uint8Array(pdfBuffer), {
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `attachment; filename="callpulse-report-${format(new Date(), "yyyy-MM-dd")}.pdf"`,
@@ -126,18 +128,18 @@ export async function GET(req: Request) {
   }
 }
 
-function writeStat(doc: any, label: string, value: string) {
-  doc.fontSize(11).fillColor("#464555").text(`${label}: `, { continued: true });
+function writeStat(doc: PdfDoc, label: string, value: string) {
+  (doc as any).fontSize(11).fillColor("#464555").text(`${label}: `, { continued: true });
   doc.fillColor("#3525cd").text(value);
 }
 
-function writeTableHeader(doc: any, cells: string[]) {
+function writeTableHeader(doc: PdfDoc, cells: string[]) {
   const widths = [150, 80, 80, 80, 80];
   const startX = doc.x;
   const startY = doc.y;
 
   doc.save();
-  doc.rect(startX, startY, 490, 20).fill("#3525cd");
+  (doc as any).rect(startX, startY, 490, 20).fill("#3525cd");
   doc.fillColor("#ffffff").fontSize(9);
 
   let cursor = startX + 6;
@@ -150,7 +152,7 @@ function writeTableHeader(doc: any, cells: string[]) {
   doc.moveDown(1.1);
 }
 
-function writeTableRow(doc: any, cells: string[]) {
+function writeTableRow(doc: PdfDoc, cells: string[]) {
   const widths = [150, 80, 80, 80, 80];
   const startX = doc.x;
   const startY = doc.y;

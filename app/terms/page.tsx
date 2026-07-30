@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Terms of Service — Call-Pulse",
@@ -10,7 +11,7 @@ export default function TermsPage() {
     <div className="min-h-screen bg-[#fbf8ff] text-[#1a1b22] font-sans">
       <header className="border-b border-[#c7c4d8] bg-white sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-6 py-4 flex justify-between items-center">
-          <a href="/" className="text-[18px] font-bold text-[#3525cd]">Call-Pulse</a>
+          <Link href="/" className="text-[18px] font-bold text-[#3525cd]">Call-Pulse</Link>
           <div className="flex gap-4 text-[13px]">
             <a href="/privacy" className="text-[#464555] hover:text-[#3525cd]">Privacy Policy</a>
             <a href="/dashboard" className="bg-[#3525cd] text-white px-4 py-1.5 rounded-lg font-bold hover:opacity-90 transition-all">Dashboard</a>
@@ -39,7 +40,7 @@ export default function TermsPage() {
             <h2 className="text-[20px] font-bold mb-3">2. Description of Service</h2>
             <p>
               Call-Pulse is a SaaS platform that automatically detects missed calls on your connected phone lines and
-              sends automated SMS or WhatsApp messages to the callers via your Twilio and Meta WhatsApp Business API
+              sends automated WhatsApp messages to the callers via your Meta WhatsApp Business API
               credentials. The Service provides a dashboard to monitor activity, manage automation rules, and view analytics.
             </p>
           </section>
@@ -55,7 +56,6 @@ export default function TermsPage() {
               <li>The Telephone Consumer Protection Act (TCPA) in the United States</li>
               <li>GDPR and PECR in the European Union and United Kingdom</li>
               <li>Local telecommunications regulations in your jurisdiction</li>
-              <li>Twilio&apos;s Acceptable Use Policy</li>
               <li>Meta&apos;s WhatsApp Business Policy</li>
             </ul>
 
@@ -71,7 +71,7 @@ export default function TermsPage() {
 
             <h3 className="text-[16px] font-semibold mb-2 mt-4">3.3 API Credentials</h3>
             <p>
-              You are responsible for the security of your Twilio and Meta API credentials. Call-Pulse stores these
+              You are responsible for the security of your Meta WhatsApp API credentials. Call-Pulse stores these
               credentials encrypted and never shares them with third parties other than the respective provider APIs.
               You must promptly revoke and rotate credentials if you suspect they have been compromised.
             </p>
@@ -94,7 +94,7 @@ export default function TermsPage() {
             <h2 className="text-[20px] font-bold mb-3">5. Service Availability</h2>
             <p>
               We strive to maintain high availability but do not guarantee uninterrupted service. The Service depends on
-              third-party providers (Twilio, Meta, Supabase, Vercel) whose availability is outside our control.
+              third-party providers (Meta, Supabase, Vercel) whose availability is outside our control.
               Scheduled maintenance will be communicated in advance where possible.
             </p>
           </section>
@@ -104,8 +104,8 @@ export default function TermsPage() {
             <p>
               Access to certain features may require a paid subscription. Pricing details are available on our website.
               Fees are billed in advance and are non-refundable except as required by law or as explicitly stated in
-              our refund policy. You are also responsible for all Twilio and Meta API usage costs, which are billed
-              directly by those providers.
+              our refund policy. You are also responsible for all Meta WhatsApp API usage costs, which are billed
+              directly by Meta.
             </p>
           </section>
 
