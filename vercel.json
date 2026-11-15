@@ -2,11 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/rollup-metrics",
-      "schedule": "0 1 * * *"
-    },
-    {
-      "path": "/api/cron/follow-up-sequences",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
