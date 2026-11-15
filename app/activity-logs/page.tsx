@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 type ActivityItem = {
   id: string;
@@ -32,6 +33,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function ActivityLogsPage() {
+  const router = useRouter();
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -40,6 +42,12 @@ export default function ActivityLogsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [autoReplies, setAutoReplies] = useState(0);
   const [missedCalls, setMissedCalls] = useState(0);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = () => {
+    setSigningOut(true);
+    window.setTimeout(() => router.push("/sign-in"), 900);
+  };
 
   useEffect(() => {
     async function fetchFeed() {
@@ -111,15 +119,21 @@ export default function ActivityLogsPage() {
             <span className="material-symbols-outlined text-[20px] not-italic leading-none">help</span>
             <span className="text-[13px]">Support</span>
           </a>
-          <a href="/sign-in" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+          <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
             <span className="material-symbols-outlined text-[20px] not-italic leading-none">logout</span>
             <span className="text-[13px]">Sign Out</span>
-          </a>
+          </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
       <div className="flex-1 h-full flex flex-col overflow-y-auto">
+        {signingOut && (
+          <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4 bg-[#fbf8ff]/95">
+            <div className="h-10 w-10 border-4 border-[#3525cd]/20 border-t-[#3525cd] rounded-full animate-spin" />
+            <p className="text-[14px] text-[#464555] font-semibold">Signing out...</p>
+          </div>
+        )}
         {/* TopAppBar */}
         <header className="sticky top-0 z-40 bg-[#fbf8ff]/90 backdrop-blur-md border-b border-[#c7c4d8] shadow-sm flex justify-between items-center px-6 py-3 shrink-0">
           <div className="flex items-center gap-6 flex-1">

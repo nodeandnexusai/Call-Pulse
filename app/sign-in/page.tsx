@@ -2,8 +2,10 @@
 
 import React, { useState } from "react";
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function SignInPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
@@ -24,7 +26,7 @@ export default function SignInPage() {
 
   const handleGoogleSignIn = () => {
     setLoadingGoogle(true);
-    signIn("google", { callbackUrl: "/dashboard" });
+    window.setTimeout(() => router.push("/"), 900);
   };
 
   return (
@@ -67,6 +69,13 @@ export default function SignInPage() {
       {/* Right Auth Column */}
       <div className="col-span-1 md:col-span-7 lg:col-span-8 flex items-center justify-center p-6 sm:p-12 relative z-10">
         <div className="w-full max-w-[420px] bg-white/70 backdrop-blur-xl border border-white/50 p-8 rounded-2xl shadow-xl shadow-black/5 space-y-6">
+          {loadingGoogle ? (
+            <div className="min-h-[320px] flex flex-col items-center justify-center gap-4">
+              <div className="h-10 w-10 border-4 border-[#3525cd]/20 border-t-[#3525cd] rounded-full animate-spin" />
+              <p className="text-[14px] text-[#464555] font-semibold">Redirecting...</p>
+            </div>
+          ) : (
+            <>
 
           <div className="text-center md:text-left">
             <h2 className="text-[24px] font-bold text-[#1a1b22]">Sign In to Call-Pulse</h2>
@@ -144,6 +153,8 @@ export default function SignInPage() {
             and{" "}
             <a href="/privacy" className="text-[#6c5ce7] hover:underline font-semibold">Privacy Policy</a>.
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>
