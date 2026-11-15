@@ -77,7 +77,7 @@ export default function ActivityLogsPage() {
       {/* SideNavBar */}
       <aside className="w-64 h-full bg-[#2f3038] flex flex-col py-4 px-4 border-r border-[#777587] z-50 text-white shrink-0">
         <div className="mb-6 px-2">
-          <h1 className="text-[18px] font-bold text-[#e2dfff]">Call-Pulse</h1>
+          <h1 className="text-[20px] font-bold text-[#e2dfff]">Node &amp; Nexus AI</h1>
           <p className="text-[11px] text-[#e3e1ec] opacity-70">Intelligent Link</p>
         </div>
         <nav className="flex-grow space-y-1">
@@ -88,14 +88,6 @@ export default function ActivityLogsPage() {
           <a href="/activity-logs" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#e2dfff] font-bold border-r-2 border-[#3525cd] bg-[#3525cd]/10 transition-colors">
             <span className="material-symbols-outlined text-[20px] not-italic leading-none">list_alt</span>
             <span className="text-[13px]">Activity Logs</span>
-          </a>
-          <a href="/conversations" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
-            <span className="material-symbols-outlined text-[20px] not-italic leading-none">forum</span>
-            <span className="text-[13px]">Conversations</span>
-          </a>
-          <a href="/reports" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
-            <span className="material-symbols-outlined text-[20px] not-italic leading-none">bar_chart</span>
-            <span className="text-[13px]">Reports</span>
           </a>
           <a href="/integrations" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
             <span className="material-symbols-outlined text-[20px] not-italic leading-none">hub</span>
@@ -115,6 +107,14 @@ export default function ActivityLogsPage() {
             <span className="material-symbols-outlined text-[18px] not-italic leading-none">add</span>
             New Automation
           </button>
+          <a href="/support" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+            <span className="material-symbols-outlined text-[20px] not-italic leading-none">help</span>
+            <span className="text-[13px]">Support</span>
+          </a>
+          <a href="/sign-in" className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#b0aed4] hover:bg-white/5 transition-colors">
+            <span className="material-symbols-outlined text-[20px] not-italic leading-none">logout</span>
+            <span className="text-[13px]">Sign Out</span>
+          </a>
         </div>
       </aside>
 
@@ -134,6 +134,19 @@ export default function ActivityLogsPage() {
                 <span className="material-symbols-outlined text-[20px] not-italic leading-none">notifications</span>
                 <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-[#ba1a1a] rounded-full"></span>
               </button>
+              <button className="p-1.5 hover:scale-105 transition-all text-[#464555] flex items-center justify-center">
+                <span className="material-symbols-outlined text-[20px] not-italic leading-none">bolt</span>
+              </button>
+            </div>
+            <div className="h-8 w-px bg-[#c7c4d8]" />
+            <div className="flex items-center gap-2">
+              <div className="text-right">
+                <p className="text-[13px] font-bold text-[#1a1b22]">Admin profile</p>
+                <p className="text-[11px] text-[#464555]">Superuser</p>
+              </div>
+              <div className="w-10 h-10 rounded-full border-2 border-[#e2dfff] bg-[#4f46e5] text-white flex items-center justify-center font-bold text-[13px]">
+                AP
+              </div>
             </div>
           </div>
         </header>
@@ -150,7 +163,15 @@ export default function ActivityLogsPage() {
               <h1 className="text-[24px] font-bold text-[#1a1b22]">Activity Logs</h1>
               <p className="text-[13px] text-[#464555]">Monitor and analyze your intelligent call bridge performance in real-time.</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <button className="flex items-center gap-1.5 bg-white border border-[#c7c4d8] px-3 py-2 rounded-lg text-[13px] font-medium text-[#1a1b22] hover:bg-zinc-50 shadow-sm">
+                <span className="material-symbols-outlined text-[18px] not-italic leading-none">calendar_today</span>
+                Last 24 Hours
+              </button>
+              <button className="flex items-center gap-1.5 bg-white border border-[#c7c4d8] px-3 py-2 rounded-lg text-[13px] font-medium text-[#1a1b22] hover:bg-zinc-50 shadow-sm">
+                <span className="material-symbols-outlined text-[18px] not-italic leading-none">download</span>
+                Export
+              </button>
               <select
                 value={statusFilter}
                 onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
@@ -165,33 +186,36 @@ export default function ActivityLogsPage() {
 
           {/* Metric Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="bg-white border border-[#c7c4d8] rounded-xl p-5 shadow-sm">
+            <div className="bg-white/80 border border-zinc-200 rounded-xl p-5 shadow-sm hover:border-[#3525cd]/50 transition-all">
               <div className="flex justify-between items-center mb-4">
                 <div className="w-10 h-10 rounded-lg bg-[#e2dfff] text-[#3525cd] flex items-center justify-center">
                   <span className="material-symbols-outlined text-[20px]">call_missed</span>
                 </div>
+                <span className="flex items-center text-rose-600 text-[11px] font-bold"><span className="material-symbols-outlined text-[16px]">trending_up</span>+12%</span>
               </div>
               <p className="text-[11px] font-bold uppercase tracking-wider text-[#464555] mb-1">Total Missed Calls</p>
               <h3 className="text-[26px] font-bold text-[#1a1b22]">{loading ? "—" : missedCalls.toLocaleString()}</h3>
             </div>
 
-            <div className="bg-white border border-[#c7c4d8] rounded-xl p-5 shadow-sm">
+            <div className="bg-white/80 border border-zinc-200 rounded-xl p-5 shadow-sm hover:border-emerald-500/50 transition-all">
               <div className="flex justify-between items-center mb-4">
                 <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <span className="material-symbols-outlined text-[20px]">quickreply</span>
                 </div>
+                <span className="flex items-center text-emerald-600 text-[11px] font-bold"><span className="material-symbols-outlined text-[16px]">trending_up</span>+48%</span>
               </div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#464555] mb-1">Leads Recovered</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#464555] mb-1">Auto-Replies Sent</p>
               <h3 className="text-[26px] font-bold text-[#1a1b22]">{loading ? "—" : autoReplies.toLocaleString()}</h3>
             </div>
 
-            <div className="bg-white border border-[#c7c4d8] rounded-xl p-5 shadow-sm">
+            <div className="bg-white/80 border border-zinc-200 rounded-xl p-5 shadow-sm hover:border-[#7e3000]/50 transition-all">
               <div className="flex justify-between items-center mb-4">
                 <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
                   <span className="material-symbols-outlined text-[20px]">schedule</span>
                 </div>
+                <span className="flex items-center text-emerald-600 text-[11px] font-bold"><span className="material-symbols-outlined text-[16px]">trending_up</span>+5.4h</span>
               </div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#464555] mb-1">Total Events</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#464555] mb-1">Time Saved</p>
               <h3 className="text-[26px] font-bold text-[#1a1b22]">{loading ? "—" : total.toLocaleString()}</h3>
             </div>
           </div>
