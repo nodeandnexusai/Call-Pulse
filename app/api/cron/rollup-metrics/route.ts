@@ -78,7 +78,7 @@ export async function POST(req: Request) {
 
       let avgResponseTimeSeconds: number | null = null;
       if (callsWithResponse.length > 0) {
-        const totalSeconds = callsWithResponse.reduce((sum, call) => {
+        const totalSeconds = callsWithResponse.reduce<number>((sum, call) => {
           const firstMsg = call.lead?.messages[0];
           if (!firstMsg?.sentAt) return sum;
           return (
