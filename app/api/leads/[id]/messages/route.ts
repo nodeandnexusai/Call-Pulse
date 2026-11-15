@@ -21,7 +21,7 @@ export async function GET(
         messages: { orderBy: { createdAt: "asc" } },
         call: true,
         sourceLine: true,
-        assignedAgent: { select: { fullName: true, email: true } },
+        assignedAgent: { select: { name: true, email: true } },
       },
     });
 
@@ -29,7 +29,18 @@ export async function GET(
       return NextResponse.json({ error: "Lead not found" }, { status: 404 });
     }
 
-    return NextResponse.json(lead);
+    const { assignedAgent, ...rest } = lead;
+    const transformedLead = {
+      ...rest,
+      assignedAgent: assignedAgent
+        ? {
+            fullName: assignedAgent.name,
+            email: assignedAgent.email,
+          }
+        : null,
+    };
+
+    return NextResponse.json(transformedLead);
   } catch (err) {
     if (err instanceof Response) return err;
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

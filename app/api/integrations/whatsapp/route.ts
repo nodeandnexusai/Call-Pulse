@@ -1,94 +1,102 @@
 import { NextResponse } from "next/server";
 import { requireBusiness } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { encrypt } from "@/lib/encryption";
+import { encrypt, decrypt, maskSecret } from "@/lib/encryption";
 
-async function verifyWhatsAppConnection(
-  accessToken: string,
-  phoneNumberId: string
-): Promise<boolean> {
+/**
+ * GET /api/integrations/whatsapp
+ * Returns the current business's WhatsApp credential info (masked tokens only).
+ */
+export async function GET() {
   try {
-    const res = await fetch(
-      `https://graph.facebook.com/v19.0/${phoneNumberId}`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
+    const { business } = await requireBusiness();
+
+    const credential = await prisma.integrationCredential.findFirst({
+      where: { businessId: business.id, provider: "meta_whatsapp" },
+    });
+
+    if (!credential) {
+      return NextResponse.json({ connected: false });
+    }
+
+    // Build masked token — NEVER return accessTokenEncrypted
+    let accessTokenMasked: string | null = null;
+    if (credential.accessTokenEncrypted) {
+      try {
+        const decrypted = decrypt(credential.accessTokenEncrypted);
+        accessTokenMasked = maskSecret(decrypted, 4);
+      } catch {
+        accessTokenMasked = "••••••";
       }
-    );
-    return res.ok;
-  } catch {
-    return false;
+    }
+
+    return NextResponse.json({
+      connected: true,
+      id: credential.id,
+      phoneNumberId: credential.phoneNumberId,
+      wabaId: credential.wabaId,
+      accessTokenMasked,
+      verifyToken: credential.verifyToken,
+      status: credential.status,
+      lastVerifiedAt: credential.lastVerifiedAt,
+    });
+  } catch (err) {
+    if (err instanceof Response) return err;
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
+/**
+ * POST /api/integrations/whatsapp
+ * Saves (upserts) WhatsApp credentials. Encrypts the access token server-side.
+ * Does NOT auto-verify — use POST /api/integrations/test for that.
+ */
 export async function POST(req: Request) {
   try {
     const { business } = await requireBusiness();
     const body = await req.json();
-    const { phoneNumberId, wabaId, accessToken } = body;
+    const { phoneNumberId, accessToken, wabaId, verifyToken } = body;
 
-    if (!phoneNumberId || !accessToken) {
+    if (!phoneNumberId || !accessToken || !wabaId) {
       return NextResponse.json(
-        { error: "phoneNumberId and accessToken are required" },
+        { error: "phoneNumberId, accessToken, and wabaId are required" },
         { status: 400 }
       );
     }
 
-    const isValid = await verifyWhatsAppConnection(accessToken, phoneNumberId);
+    // Encrypt sensitive values — never store plaintext
+    const accessTokenEncrypted = encrypt(accessToken);
 
-    const cred = await prisma.integrationCredential.upsert({
+    const credential = await prisma.integrationCredential.upsert({
       where: {
         businessId_provider: { businessId: business.id, provider: "meta_whatsapp" },
       },
       update: {
         phoneNumberId,
         wabaId: wabaId ?? null,
-        accessTokenEncrypted: encrypt(accessToken),
-        status: isValid ? "active" : "failed",
-        lastVerifiedAt: isValid ? new Date() : null,
+        accessTokenEncrypted,
+        verifyToken: verifyToken ?? null,
+        status: "pending", // becomes 'active' after test passes
+        updatedAt: new Date(),
       },
       create: {
         businessId: business.id,
         provider: "meta_whatsapp",
         phoneNumberId,
         wabaId: wabaId ?? null,
-        accessTokenEncrypted: encrypt(accessToken),
-        status: isValid ? "active" : "failed",
-        lastVerifiedAt: isValid ? new Date() : null,
+        accessTokenEncrypted,
+        verifyToken: verifyToken ?? null,
+        status: "pending",
       },
     });
 
-    // Also upsert a business line for WhatsApp
-    if (isValid) {
-      const existingLine = await prisma.businessLine.findFirst({
-        where: {
-          businessId: business.id,
-          phoneNumber: phoneNumberId,
-        },
-        select: { id: true },
-      });
-
-      if (existingLine) {
-        await prisma.businessLine.update({
-          where: { id: existingLine.id },
-          data: { isActive: true },
-        });
-      } else {
-        await prisma.businessLine.create({
-          data: {
-            businessId: business.id,
-            label: "WhatsApp Business Line",
-            phoneNumber: phoneNumberId,
-            isActive: true,
-          },
-        });
-      }
-    }
-
+    // NEVER return the token — return only masked version
     return NextResponse.json({
       success: true,
-      verified: isValid,
-      credentialId: cred.id,
-      status: cred.status,
+      id: credential.id,
+      phoneNumberId: credential.phoneNumberId,
+      accessTokenMasked: "••••••" + accessToken.slice(-4),
+      status: credential.status,
     });
   } catch (err) {
     if (err instanceof Response) return err;

@@ -30,7 +30,7 @@ export async function GET(req: Request) {
         take: limit,
         include: {
           sourceLine: { select: { label: true, phoneNumber: true } },
-          assignedAgent: { select: { fullName: true, email: true } },
+          assignedAgent: { select: { name: true, email: true } },
           messages: {
             orderBy: { createdAt: "desc" },
             take: 1,
@@ -41,8 +41,21 @@ export async function GET(req: Request) {
       }),
     ]);
 
+    const transformedLeads = leads.map((lead) => {
+      const { assignedAgent, ...rest } = lead;
+      return {
+        ...rest,
+        assignedAgent: assignedAgent
+          ? {
+              fullName: assignedAgent.name,
+              email: assignedAgent.email,
+            }
+          : null,
+      };
+    });
+
     return NextResponse.json({
-      items: leads,
+      items: transformedLeads,
       total,
       page,
       totalPages: Math.ceil(total / limit),

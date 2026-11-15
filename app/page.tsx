@@ -1,48 +1,31 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { SignIn, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
 export default function AuthAndOnboarding() {
-  const { isSignedIn, isLoaded } = useUser();
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
-  // Agar user signed in hai toh foran dashboard par bhej dein
+  // Redirect users based on authentication and onboarding status
   useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      router.push("/dashboard");
-    }
-  }, [isSignedIn, isLoaded, router]);
-
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 3;
-
-  const nextStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      window.location.reload();
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const stepTitles: { [key: number]: string } = {
-    1: "Meta WhatsApp Setup",
-    2: "Business Account",
-    3: "Test System",
-  };
-
-  // Jab tak user load ho raha hai, blank ya loading dikha sakte hain
-  if (!isLoaded || isSignedIn) {
-    return null;
-  }
+    fetch("/api/onboarding/status")
+      .then((res) => {
+        if (res.status === 401) {
+          router.push("/sign-in");
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data) {
+          router.push(data.completed ? "/dashboard" : "/onboarding");
+        }
+      })
+      .catch(() => {
+        router.push("/sign-in");
+      });
+  }, [router]);
 
   return (
     <main className="relative flex min-h-screen w-full bg-[#fbf8ff] text-[#1a1b22] antialiased overflow-hidden font-sans">
@@ -89,128 +72,14 @@ export default function AuthAndOnboarding() {
         </div>
       </section>
 
-      {/* Right Side: Auth Form Centered */}
+      {/* Right Side: Loading Spinner */}
       <section className="flex flex-1 items-center justify-center bg-white px-[24px] py-[64px]">
         <div className="w-full max-w-md flex flex-col items-center justify-center gap-4">
-          <SignIn routing="hash" />
-          <div className="flex items-center gap-4 text-[12px] text-[#464555]">
-            <a href="/privacy" className="hover:text-[#3525cd]">Privacy Policy</a>
-            <a href="/terms" className="hover:text-[#3525cd]">Terms of Service</a>
-          </div>
+          <div className="h-10 w-10 border-4 border-[#3525cd]/20 border-t-[#3525cd] rounded-full animate-spin" />
+          <p className="text-[14px] text-[#464555] font-semibold">Redirecting...</p>
         </div>
       </section>
 
-      {/* Onboarding Wizard Modal Overlay */}
-      {isOnboardingOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f3038]/40 backdrop-blur-sm transition-opacity duration-300">
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#c7c4d8] m-[16px]">
-            {/* Progress Bar */}
-            <div className="h-1.5 w-full bg-[#eeedf7] flex">
-              <div 
-                className="h-full bg-[#3525cd] transition-all duration-500 ease-out" 
-                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-              ></div>
-            </div>
-
-            <div className="p-[48px]">
-              {/* Step Header */}
-              <div className="mb-[32px] flex justify-between items-center">
-                <div>
-                  <span className="text-[12px] font-bold text-[#3525cd] uppercase tracking-widest">
-                    Step {currentStep} of 3
-                  </span>
-                  <h3 className="text-[28px] font-bold mt-1">{stepTitles[currentStep]}</h3>
-                </div>
-                <button 
-                  onClick={() => setIsOnboardingOpen(false)}
-                  className="h-10 w-10 rounded-full hover:bg-[#eeedf7] flex items-center justify-center transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[#464555]">close</span>
-                </button>
-              </div>
-
-              {/* Step Content Area */}
-              <div className="min-h-[280px]">
-                {currentStep === 1 && (
-                  <div>
-                    <p className="text-[14px] text-[#464555] mb-[24px]">Provide your Meta WhatsApp Business API credentials to detect missed calls and send automated replies.</p>
-                    <div className="space-y-[16px]">
-                      <div className="space-y-[4px]">
-                        <label className="text-[12px] font-bold text-[#1a1b22]">Phone Number ID</label>
-                        <input className="w-full rounded-xl border border-[#c7c4d8] p-[16px] focus:border-[#3525cd] focus:ring-1 focus:ring-[#3525cd] outline-none" placeholder="109283746556473" type="text" />
-                      </div>
-                      <div className="space-y-[4px]">
-                        <label className="text-[12px] font-bold text-[#1a1b22]">Permanent Access Token</label>
-                        <input className="w-full rounded-xl border border-[#c7c4d8] p-[16px] focus:border-[#3525cd] focus:ring-1 focus:ring-[#3525cd] outline-none" placeholder="••••••••••••••••••••••••" type="password" />
-                      </div>
-                      <div className="flex items-center gap-[16px] p-[16px] bg-[#f4f2fd] rounded-xl border border-[#3525cd]/10">
-                        <span className="material-symbols-outlined text-[#3525cd]">info</span>
-                        <p className="text-[13px] text-[#464555]">Your credentials are encrypted using AES-256 and never shared.</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {currentStep === 2 && (
-                  <div>
-                    <p className="text-[14px] text-[#464555] mb-[24px]">Scan the QR code below with your WhatsApp Business account to enable AI recovery messages.</p>
-                    <div className="flex flex-col items-center justify-center p-[24px] border-2 border-dashed border-[#c7c4d8] rounded-2xl bg-[#ffffff]">
-                      <div className="bg-white p-[16px] rounded-xl shadow-sm border border-[#c7c4d8] mb-[16px]">
-                        <img className="w-48 h-48" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_-ltIUwIanCKZtFdyLhJdMOrTc7hGpQpPJmuTxN05CzpNCvI0Rq-UwJsaoGurPhYmC4tDM1hI5H0aKYWuYrlHYM0K0c9FU5fQU35RaEqiIUUP4d48y52zkcDXXlD-pS3qNjwUQ1uesyt3_dgtXF0U57qUcVb-CB84Zbe4PgnVxVf0QwE9rWLWLOqL1-ThpMBbcnQrKBWkxZJ0wp-bsmeBLaNCXH17ZsVVZRWfJaNer6E_XIHkH-OyAHw9RvFhkHLt1rlruf3kW2je" alt="QR Code" />
-                      </div>
-                      <p className="text-[13px] text-center text-[#464555]">Waiting for connection...</p>
-                    </div>
-                  </div>
-                )}
-
-                {currentStep === 3 && (
-                  <div>
-                    <p className="text-[14px] text-[#464555] mb-[24px]">Ready to see the magic? Send a test trigger to verify your Nexus configuration.</p>
-                    <div className="grid grid-cols-2 gap-[24px]">
-                      <div className="p-[24px] bg-[#f4f2fd] rounded-2xl border border-[#c7c4d8] hover:border-[#3525cd] transition-all cursor-pointer">
-                        <div className="h-12 w-12 bg-[#3525cd]/10 rounded-full flex items-center justify-center mb-[16px]">
-                          <span className="material-symbols-outlined text-[#3525cd]">call_missed</span>
-                        </div>
-                        <h4 className="text-[16px] font-semibold mb-[4px]">Missed Call</h4>
-                        <p className="text-[12px] text-[#464555]">Simulate a customer call going to voicemail.</p>
-                      </div>
-                      <div className="p-[24px] bg-[#f4f2fd] rounded-2xl border border-[#c7c4d8] hover:border-[#3525cd] transition-all cursor-pointer">
-                        <div className="h-12 w-12 bg-[#006c49]/10 rounded-full flex items-center justify-center mb-[16px]">
-                          <span className="material-symbols-outlined text-[#006c49]">forum</span>
-                        </div>
-                        <h4 className="text-[16px] font-semibold mb-[4px]">AI Response</h4>
-                        <p className="text-[12px] text-[#464555]">Check your WhatsApp for the instant recovery text.</p>
-                      </div>
-                    </div>
-                    <div className="mt-[24px] p-[16px] bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 flex items-center gap-[16px]">
-                      <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                      <span className="text-[13px] font-medium">All systems operational. Meta WhatsApp Business API active.</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Footer Navigation */}
-              <div className="mt-[48px] flex items-center justify-between border-t border-[#c7c4d8] pt-[24px]">
-                <button 
-                  onClick={prevStep}
-                  className={`flex items-center gap-[4px] px-[24px] py-[16px] text-[#464555] font-bold hover:text-[#3525cd] transition-colors ${currentStep === 1 ? 'invisible' : ''}`}
-                >
-                  <span className="material-symbols-outlined">arrow_back</span>
-                  Back
-                </button>
-                <button 
-                  onClick={nextStep}
-                  className="flex items-center gap-[8px] bg-[#3525cd] px-[48px] py-[16px] text-white rounded-xl font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md"
-                >
-                  <span>{currentStep === 3 ? 'Finish Setup' : 'Next Step'}</span>
-                  <span className="material-symbols-outlined">arrow_forward</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

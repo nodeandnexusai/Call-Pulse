@@ -1,6 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
+import NextAuth from "next-auth";
+import { authConfig } from "./auth-config";
 import { prisma } from "./prisma";
 import { Business, User } from "@prisma/client";
+
+export const { auth, signIn, signOut } = NextAuth(authConfig);
 
 export type BusinessWithUser = {
   business: Business;
@@ -8,44 +11,20 @@ export type BusinessWithUser = {
 };
 
 /**
- * Looks up or creates a Business + User row for the authenticated Clerk user.
- * Called on every authenticated API route to ensure tenant isolation.
+ * Looks up the Business + User row for the authenticated NextAuth user.
  */
 export async function getBusinessForUser(): Promise<BusinessWithUser | null> {
-  const { userId } = await auth();
-  if (!userId) return null;
+  const session = await auth();
+  if (!session?.user?.id) return null;
 
-  // Try to find existing user + business
-  let user = await prisma.user.findUnique({
-    where: { clerkUserId: userId },
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
     include: { business: true },
   });
 
-  if (user) {
-    return { business: user.business, user };
+  if (!user || !user.business) {
+    return null;
   }
-
-  // First-time login: create business + user atomically
-  const business = await prisma.business.upsert({
-    where: { clerkUserId: userId },
-    update: {},
-    create: {
-      clerkUserId: userId,
-      name: "My Business",
-      timezone: "Asia/Dubai",
-    },
-  });
-
-  user = await prisma.user.upsert({
-    where: { clerkUserId: userId },
-    update: {},
-    create: {
-      clerkUserId: userId,
-      businessId: business.id,
-      role: "superuser",
-    },
-    include: { business: true },
-  });
 
   return { business: user.business, user };
 }

@@ -31,7 +31,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       lead: updated,
-      message: `Lead taken over by ${user.fullName ?? user.clerkUserId}`,
+      message: `Lead taken over by ${user.name ?? user.email ?? "Agent"}`,
     });
   } catch (err) {
     if (err instanceof Response) return err;

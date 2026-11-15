@@ -8,21 +8,20 @@ generator client {
 
 // ─── Tenant Root ───────────────────────────────────────────────────────────────
 model Business {
-  id          String   @id @default(uuid())
-  clerkUserId String   @unique @map("clerk_user_id")
-  name        String   @default("My Business")
-  timezone    String   @default("Asia/Dubai")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id        String   @id @default(uuid())
+  name      String   @default("My Business")
+  timezone  String   @default("Asia/Dubai")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  users              User[]
-  lines              BusinessLine[]
-  credentials        IntegrationCredential[]
-  calls              Call[]
-  leads              Lead[]
-  templates          MessageTemplate[]
-  messages           Message[]
-  automationRules    AutomationRule[]
-  dailyMetrics       DailyMetric[]
+  users               User[]
+  lines               BusinessLine[]
+  credentials         IntegrationCredential[]
+  calls               Call[]
+  leads               Lead[]
+  templates           MessageTemplate[]
+  messages            Message[]
+  automationRules     AutomationRule[]
+  dailyMetrics        DailyMetric[]
   credentialAccessLog CredentialAccessLog[]
 
   @@map("businesses")
@@ -30,24 +29,22 @@ model Business {
 
 // ─── Dashboard Users ───────────────────────────────────────────────────────────
 model User {
-  id          String   @id @default(uuid())
-  clerkUserId String   @unique @map("clerk_user_id")
-  businessId  String   @map("business_id")
-  role        UserRole @default(agent)
-  fullName    String?  @map("full_name")
-  email       String?
-  createdAt   DateTime @default(now()) @map("created_at")
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  businessId    String?   @map("business_id")
+  role          String    @default("admin")
+  createdAt     DateTime  @default(now()) @map("created_at")
 
-  business       Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  assignedLeads  Lead[]
+  business      Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  assignedLeads Lead[]
+  accounts      Account[]
+  sessions      Session[]
+  credentialAccessLogs CredentialAccessLog[]
 
   @@map("users")
-}
-
-enum UserRole {
-  superuser
-  admin
-  agent
 }
 
 // ─── Connected Phone Lines ─────────────────────────────────────────────────────
@@ -76,9 +73,11 @@ model IntegrationCredential {
   phoneNumberId        String?           @map("phone_number_id")
   wabaId               String?           @map("waba_id")
   accessTokenEncrypted String?           @map("access_token_encrypted")
+  verifyToken          String?           @map("verify_token")
   status               CredentialStatus  @default(pending)
   lastVerifiedAt       DateTime?         @map("last_verified_at")
   createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime?         @map("updated_at")
 
   business            Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
   credentialAccessLog CredentialAccessLog[]
@@ -258,12 +257,53 @@ model CredentialAccessLog {
   id           String   @id @default(uuid())
   businessId   String   @map("business_id")
   credentialId String   @map("credential_id")
-  clerkUserId  String   @map("clerk_user_id")
+  userId       String   @map("user_id")
   action       String
   createdAt    DateTime @default(now()) @map("created_at")
 
   business   Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
   credential IntegrationCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("credential_access_logs")
+}
+
+// ─── NextAuth Support Models ──────────────────────────────────────────────────
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
 }

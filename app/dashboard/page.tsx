@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { SignOutButton } from "@clerk/nextjs";
+import { signOut } from "next-auth/react";
 
 type OverviewData = {
   systemStatus: "active" | "degraded" | "offline";
@@ -121,12 +121,13 @@ export default function CommandCenterPage() {
           <span className="material-symbols-outlined text-[18px] not-italic leading-none">help</span>
           <span>Support</span>
         </a>
-        <SignOutButton redirectUrl="/">
-          <button className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-gray-300 hover:bg-white/5 transition-colors text-[13px] text-left">
-            <span className="material-symbols-outlined text-[18px] not-italic leading-none">logout</span>
-            <span>Sign Out</span>
-          </button>
-        </SignOutButton>
+        <button
+          onClick={() => signOut({ callbackUrl: "/" })}
+          className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-gray-300 hover:bg-white/5 transition-colors text-[13px] text-left"
+        >
+          <span className="material-symbols-outlined text-[18px] not-italic leading-none">logout</span>
+          <span>Sign Out</span>
+        </button>
       </div>
     </aside>
   );
